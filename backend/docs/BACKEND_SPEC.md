@@ -4,7 +4,7 @@
 
 Tài liệu này là nguồn sự thật cho giai đoạn backend. Nếu code, API contract hoặc database design thay đổi, phải cập nhật tài liệu trước hoặc trong cùng thay đổi.
 
-- Trạng thái: **Architecture approved — ready for project initialization**.
+- Trạng thái: **Phase 0 implemented locally — verification passed; ready for review and commit**.
 - Phạm vi hiện tại: backend trước, mentor review xong mới triển khai frontend.
 - Runtime: Node.js + TypeScript + Express 5.
 - Database: PostgreSQL 17 local, quản lý bằng pgAdmin 4.
@@ -674,6 +674,16 @@ Seed development:
 ## 12. Implementation phases
 
 ### Phase 0 — Backend foundation
+
+Implementation status on 2026-09-15:
+
+- Source scaffold complete on `feat/backend-foundation`.
+- Typecheck passed.
+- Production build passed.
+- Database check passed with `badminton_app_dev` against PostgreSQL 17.10.
+- Seven foundation integration tests passed.
+- Live HTTP smoke tests passed for health, CORS, 404, malformed JSON and payload limit.
+- Root `.env` was removed from the only local baseline commit and the obsolete commit object was pruned before any remote was configured.
 
 - Root workspace scripts.
 - Backend package và TypeScript config.

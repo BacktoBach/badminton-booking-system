@@ -4,5 +4,15 @@
   "private": true,
   "workspaces": [
     "backend"
-  ]
+  ],
+  "scripts": {
+    "dev:server": "npm run dev --workspace backend",
+    "build:server": "npm run build --workspace backend",
+    "typecheck:server": "npm run typecheck --workspace backend",
+    "test:server": "npm run test --workspace backend",
+    "db:check": "npm run db:check --workspace backend"
+  },
+  "engines": {
+    "node": ">=20"
+  }
 }
