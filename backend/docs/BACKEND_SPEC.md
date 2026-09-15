@@ -750,6 +750,14 @@ Implementation status on 2026-09-15:
 
 ### Phase 3 — Public classes
 
+- Implementation status: completed on `feat/public-classes` from Phase 2 merge commit `16ad1ce48f4b17cbfbb6938945996a5d13457d00`.
+- Public list uses database-side search/filter/counting before pagination and stable `start_date ASC, id ASC` ordering.
+- Search treats `%`, `_` and `\\` as literal user input instead of SQL wildcard syntax.
+- Public DTO exposes `currentStudents`, `maxStudents`, `availableSlots` and `isFull` without internal ownership fields.
+- Query/path validation covers pagination bounds, supported levels, unknown query keys and UUID class IDs.
+- PostgreSQL integration tests cover upcoming-only visibility, filtered pagination, literal search, capacity fields, detail and errors.
+- API response examples are documented in `backend/docs/API_CONTRACT.md`.
+
 - Upcoming list.
 - Search, filter, pagination.
 - Detail.

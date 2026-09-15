@@ -28,6 +28,14 @@ The health endpoint is `http://localhost:4000/api/health`.
 Authentication endpoints are available under `/api/auth`: register, login, logout, `me` and
 change-password. Login stores the JWT only in an HTTP-only cookie; the token is not returned in JSON.
 
+Public class endpoints are available without authentication:
+
+- `GET /api/classes?page=1&limit=9&search=...&level=beginner`
+- `GET /api/classes/:classId`
+
+The list contains upcoming classes only. Search and level filtering run in PostgreSQL before
+pagination, and every class includes its current enrollment count and remaining capacity.
+
 `db:migrate` is safe to rerun: applied migrations are tracked with checksums. The development seed is
 idempotent and reads its admin account values from the ignored `backend/.env` file.
 
