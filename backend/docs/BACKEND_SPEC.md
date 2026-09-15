@@ -4,7 +4,7 @@
 
 Tài liệu này là nguồn sự thật cho giai đoạn backend. Nếu code, API contract hoặc database design thay đổi, phải cập nhật tài liệu trước hoặc trong cùng thay đổi.
 
-- Trạng thái: **Phase 1 implemented locally — verification passed; ready for review and commit**.
+- Trạng thái: **Phase 2 implemented locally — verification passed; ready for review and commit**.
 - Phạm vi hiện tại: backend trước, mentor review xong mới triển khai frontend.
 - Runtime: Node.js + TypeScript + Express 5.
 - Database: PostgreSQL 17 local, quản lý bằng pgAdmin 4.
@@ -730,6 +730,17 @@ Pass criteria:
 - Tables/constraints/triggers xuất hiện trong pgAdmin.
 
 ### Phase 2 — Authentication
+
+Implementation status on 2026-09-15:
+
+- Implemented on `feat/authentication` from Phase 1 merge commit `c4fcbd293fc1642c03a48a82b42f623cba13cd48`.
+- JWT is stored only in an HTTP-only cookie and is never returned in JSON.
+- Protected requests verify HS256, reload the current database user and compare `token_version`.
+- Password changes use a conditional update, increment `token_version` and clear the cookie.
+- Registration cannot assign an admin role; duplicate email conflicts are mapped from PostgreSQL.
+- Unsafe browser origins are rejected and auth endpoints have dedicated rate limits.
+- Unit/integration tests cover validation, cookie flags, JWT, auth flow, revocation and latest-role RBAC.
+- A production Node ESM start and live dev-database login/me/logout smoke test passed.
 
 - Register, login, logout, me, change-password.
 - Cookie/JWT/token version.

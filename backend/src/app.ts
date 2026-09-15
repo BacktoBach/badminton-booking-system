@@ -6,6 +6,7 @@ import { corsOptions } from "./config/cors.js";
 import { env } from "./config/env.js";
 import { errorHandler } from "./middlewares/error-handler.js";
 import { notFound } from "./middlewares/not-found.js";
+import { validateOrigin } from "./middlewares/validate-origin.js";
 import { apiRouter } from "./routes/index.js";
 
 export const app = express();
@@ -19,6 +20,7 @@ app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
+app.use(validateOrigin);
 
 app.use("/api", apiRouter);
 

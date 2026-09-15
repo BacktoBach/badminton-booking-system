@@ -6,7 +6,6 @@ import type { Pool } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { seedDevelopmentDatabase } from "../../database/seeds/development.seed.js";
 import { runMigrations } from "../../scripts/migrate.js";
-import { env } from "../../src/config/env.js";
 import { createDatabasePool } from "../../src/database/pool.js";
 import { withTransaction } from "../../src/database/transaction.js";
 import {
@@ -142,7 +141,9 @@ describe("database baseline", () => {
   });
 
   it("refuses destructive test operations on the development database", async () => {
-    const developmentPool = createDatabasePool(env.DATABASE_URL);
+    const developmentUrl = process.env.DEVELOPMENT_DATABASE_URL_FOR_GUARD;
+    if (!developmentUrl) throw new Error("Development database URL was not preserved by test config");
+    const developmentPool = createDatabasePool(developmentUrl);
     const client = await developmentPool.connect();
     try {
       await expect(assertTestDatabase(client)).rejects.toThrow(
