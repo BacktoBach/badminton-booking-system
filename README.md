@@ -16,9 +16,17 @@ The approved backend architecture and implementation phases are documented in
 ```powershell
 npm install
 npm run db:check
+npm run db:migrate
+npm run db:seed
 npm run typecheck:server
 npm run build:server
 npm run dev:server
 ```
 
 The health endpoint is `http://localhost:4000/api/health`.
+
+`db:migrate` is safe to rerun: applied migrations are tracked with checksums. The development seed is
+idempotent and reads its admin account values from the ignored `backend/.env` file.
+
+Integration tests use `TEST_DATABASE_URL` and refuse destructive cleanup unless PostgreSQL confirms
+that the connected database name ends with `_test`.

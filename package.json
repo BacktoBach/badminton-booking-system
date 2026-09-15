@@ -10,7 +10,10 @@
     "build:server": "npm run build --workspace backend",
     "typecheck:server": "npm run typecheck --workspace backend",
     "test:server": "npm run test --workspace backend",
-    "db:check": "npm run db:check --workspace backend"
+    "db:check": "npm run db:check --workspace backend",
+    "db:migrate": "npm run db:migrate --workspace backend",
+    "db:migrate:test": "npm run db:migrate:test --workspace backend",
+    "db:seed": "npm run db:seed --workspace backend"
   },
   "engines": {
     "node": ">=20"

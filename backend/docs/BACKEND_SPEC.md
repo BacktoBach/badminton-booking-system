@@ -4,7 +4,7 @@
 
 Tài liệu này là nguồn sự thật cho giai đoạn backend. Nếu code, API contract hoặc database design thay đổi, phải cập nhật tài liệu trước hoặc trong cùng thay đổi.
 
-- Trạng thái: **Phase 0 implemented locally — verification passed; ready for review and commit**.
+- Trạng thái: **Phase 1 implemented locally — verification passed; ready for review and commit**.
 - Phạm vi hiện tại: backend trước, mentor review xong mới triển khai frontend.
 - Runtime: Node.js + TypeScript + Express 5.
 - Database: PostgreSQL 17 local, quản lý bằng pgAdmin 4.
@@ -705,6 +705,16 @@ GET /api/health → 200 khi database connected
 ```
 
 ### Phase 1 — Database baseline
+
+Implementation status on 2026-09-15:
+
+- Implemented on `feat/database-baseline` from merge commit `0699d05ef4e7b6d0dc572b95b57f9f8c2e477324`.
+- Migration runner uses an advisory lock, SHA-256 checksums, per-migration transactions and drift detection.
+- Development and test databases migrated successfully from an empty public schema.
+- A second migration run reported the schema as up to date.
+- Development seed completed twice with one admin and three classes, without duplicate rows.
+- Database-level duplicate, started-class, capacity-update and concurrent-overbooking protections passed integration tests.
+- Test cleanup guard refused the development database as expected.
 
 - Migration runner.
 - Initial schema.
