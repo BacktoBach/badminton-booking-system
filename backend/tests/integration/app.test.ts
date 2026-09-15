@@ -1,0 +1,84 @@
+import request from "supertest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("../../src/database/pool.js", () => ({
+  checkDatabaseConnection: vi.fn().mockResolvedValue(undefined),
+  closeDatabase: vi.fn().mockResolvedValue(undefined),
+  pool: { on: vi.fn() },
+}));
+
+import { app } from "../../src/app.js";
+import { checkDatabaseConnection } from "../../src/database/pool.js";
+
+describe("application foundation", () => {
+  beforeEach(() => {
+    vi.mocked(checkDatabaseConnection).mockResolvedValue(undefined);
+  });
+
+  it("reports a healthy database", async () => {
+    const response = await request(app).get("/api/health");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ status: "ok", database: "connected" });
+    expect(response.body.uptime).toEqual(expect.any(Number));
+  });
+
+  it("reports database unavailability without leaking the underlying error", async () => {
+    vi.mocked(checkDatabaseConnection).mockRejectedValueOnce(new Error("private database detail"));
+
+    const response = await request(app).get("/api/health");
+
+    expect(response.status).toBe(503);
+    expect(response.body).toEqual({
+      error: { code: "DATABASE_UNAVAILABLE", message: "Database is unavailable" },
+    });
+    expect(JSON.stringify(response.body)).not.toContain("private database detail");
+  });
+
+  it("uses the standard not-found response", async () => {
+    const response = await request(app).get("/api/missing");
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      error: { code: "ROUTE_NOT_FOUND", message: "Cannot GET /api/missing" },
+    });
+  });
+
+  it("normalizes malformed JSON errors", async () => {
+    const response = await request(app)
+      .post("/api/missing")
+      .type("application/json")
+      .send("{invalid");
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe("MALFORMED_JSON");
+  });
+
+  it("rejects request bodies above the configured limit", async () => {
+    const response = await request(app)
+      .post("/api/missing")
+      .send({ value: "a".repeat(11_000) });
+
+    expect(response.status).toBe(413);
+    expect(response.body.error.code).toBe("PAYLOAD_TOO_LARGE");
+  });
+
+  it("allows a configured browser origin with credentials", async () => {
+    const response = await request(app)
+      .get("/api/health")
+      .set("Origin", "http://localhost:5173");
+
+    expect(response.status).toBe(200);
+    expect(response.headers["access-control-allow-origin"]).toBe("http://localhost:5173");
+    expect(response.headers["access-control-allow-credentials"]).toBe("true");
+  });
+
+  it("rejects an untrusted browser origin", async () => {
+    const response = await request(app)
+      .get("/api/health")
+      .set("Origin", "https://evil.example");
+
+    expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe("FORBIDDEN");
+  });
+});
