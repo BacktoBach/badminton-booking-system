@@ -5,6 +5,10 @@ declare global {
     interface Request {
       auth?: AuthTokenPayload;
       user?: PublicUser & { tokenVersion: number };
+      validated?: {
+        query?: unknown;
+        params?: unknown;
+      };
     }
   }
 }
