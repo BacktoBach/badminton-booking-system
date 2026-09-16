@@ -4,7 +4,7 @@
 
 Tài liệu này là nguồn sự thật cho giai đoạn backend. Nếu code, API contract hoặc database design thay đổi, phải cập nhật tài liệu trước hoặc trong cùng thay đổi.
 
-- Trạng thái: **Phase 4 implemented on feature branch — automated verification passed**.
+- Trạng thái: **Phase 5 implemented on feature branch — automated verification passed**.
 - Phạm vi hiện tại: backend trước, mentor review xong mới triển khai frontend.
 - Runtime: Node.js + TypeScript + Express 5.
 - Database: PostgreSQL 17 local, quản lý bằng pgAdmin 4.
@@ -781,6 +781,14 @@ Implementation status on 2026-09-15:
 - Capacity reduction protection.
 
 ### Phase 5 — Enrollment
+
+- Implementation status: completed on `feat/enrollments` from Phase 4 merge commit `335bb93`.
+- Enroll and cancel endpoints require authentication and the current database role `user`.
+- Enrollment follows the required transaction flow and locks the class row with `SELECT ... FOR UPDATE`.
+- Friendly service checks cover missing, started, duplicate and full classes; database constraints/triggers remain the final guard.
+- Successful enroll/cancel responses return the class DTO with its new live capacity fields.
+- My-classes query supports bounded pagination and `upcoming`, `past` or `all` status filtering in PostgreSQL.
+- Concurrency integration testing sends eight simultaneous requests to a two-seat class and proves exactly two rows are stored.
 
 - Enroll/cancel/my classes.
 - Row locking và transaction.

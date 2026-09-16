@@ -46,6 +46,15 @@ Admin-only class management endpoints:
 
 These endpoints require the HTTP-only authentication cookie and the current database role `admin`.
 
+Authenticated users can manage their enrollments:
+
+- `POST /api/classes/:classId/enrollments`
+- `DELETE /api/classes/:classId/enrollments`
+- `GET /api/enrollments/me?page=1&limit=10&status=upcoming`
+
+Enrollment writes use PostgreSQL transactions and row locks so concurrent requests cannot exceed a
+class's capacity.
+
 `db:migrate` is safe to rerun: applied migrations are tracked with checksums. The development seed is
 idempotent and reads its admin account values from the ignored `backend/.env` file.
 
