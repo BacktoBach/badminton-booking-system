@@ -4,7 +4,7 @@
 
 Tài liệu này là nguồn sự thật cho giai đoạn backend. Nếu code, API contract hoặc database design thay đổi, phải cập nhật tài liệu trước hoặc trong cùng thay đổi.
 
-- Trạng thái: **Phase 2 implemented locally — verification passed; ready for review and commit**.
+- Trạng thái: **Phase 4 implemented on feature branch — automated verification passed**.
 - Phạm vi hiện tại: backend trước, mentor review xong mới triển khai frontend.
 - Runtime: Node.js + TypeScript + Express 5.
 - Database: PostgreSQL 17 local, quản lý bằng pgAdmin 4.
@@ -764,6 +764,16 @@ Implementation status on 2026-09-15:
 - Student counts và capacity fields.
 
 ### Phase 4 — Admin classes
+
+- Implementation status: completed on `feat/admin-classes` from Phase 3 merge commit `ef7b2e3`.
+- Every endpoint reloads the current user and enforces the `admin` role before controller execution.
+- Admin list includes past and upcoming classes; search/level filters, counts and pagination run in PostgreSQL.
+- Create derives `created_by_id` exclusively from the authenticated admin and rejects unknown body fields.
+- Patch uses a fixed field-to-column allowlist; empty patches and past `startDate` values are rejected.
+- Capacity reductions below existing enrollment count map the database constraint to `409 CAPACITY_BELOW_CURRENT_ENROLLMENTS`.
+- Student list supports bounded search/pagination and exposes only public identity plus `enrolledAt`.
+- Delete relies on the declared enrollment cascade and returns `204`; missing class operations return `404 CLASS_NOT_FOUND`.
+- PostgreSQL integration tests cover RBAC, CRUD, ownership, filters, capacity protection, student list and cascade deletion.
 
 - Admin list.
 - Create, update, delete.

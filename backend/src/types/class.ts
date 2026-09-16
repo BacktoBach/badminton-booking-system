@@ -39,3 +39,36 @@ export type PublicClass = {
   availableSlots: number;
   isFull: boolean;
 };
+
+export type CreateClassInput = {
+  title: string;
+  description: string;
+  coachName: string;
+  level: ClassLevel;
+  startDate: string;
+  schedule: string;
+  location: string;
+  maxStudents: number;
+};
+
+export type UpdateClassInput = Partial<CreateClassInput>;
+
+export type StudentListQuery = {
+  page: number;
+  limit: number;
+  search?: string | undefined;
+};
+
+export type EnrolledStudentRow = {
+  id: string;
+  name: string;
+  email: string;
+  enrolled_at: Date;
+};
+
+export type EnrolledStudent = {
+  id: string;
+  name: string;
+  email: string;
+  enrolledAt: string;
+};

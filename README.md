@@ -36,6 +36,16 @@ Public class endpoints are available without authentication:
 The list contains upcoming classes only. Search and level filtering run in PostgreSQL before
 pagination, and every class includes its current enrollment count and remaining capacity.
 
+Admin-only class management endpoints:
+
+- `GET /api/admin/classes`
+- `POST /api/classes`
+- `PATCH /api/classes/:classId`
+- `DELETE /api/classes/:classId`
+- `GET /api/classes/:classId/students`
+
+These endpoints require the HTTP-only authentication cookie and the current database role `admin`.
+
 `db:migrate` is safe to rerun: applied migrations are tracked with checksums. The development seed is
 idempotent and reads its admin account values from the ignored `backend/.env` file.
 
