@@ -159,3 +159,50 @@ The limit must be from 1 to 50.
 
 Password hashes, role and token version are never returned. A missing class returns
 `404 CLASS_NOT_FOUND`.
+
+## Enrollments
+
+Enrollment endpoints require a valid authentication cookie and the current database role `user`.
+Admin accounts receive `403 FORBIDDEN` because admins manage classes but do not enroll as students.
+
+### Enroll in a class
+
+`POST /classes/:classId/enrollments`
+
+The endpoint takes no request body. Success returns `201` with the class DTO after its capacity has
+been updated.
+
+Possible business errors:
+
+| Status | Code | Meaning |
+| ---: | --- | --- |
+| `404` | `CLASS_NOT_FOUND` | The class does not exist |
+| `409` | `CLASS_ALREADY_STARTED` | Its start time has passed |
+| `409` | `DUPLICATE_ENROLLMENT` | The user is already enrolled |
+| `409` | `CLASS_FULL` | Current enrollment has reached capacity |
+
+The operation runs in a PostgreSQL transaction and locks the class row before checking duplicate and
+capacity rules. Concurrent requests therefore cannot overbook the class.
+
+### Cancel enrollment
+
+`DELETE /classes/:classId/enrollments`
+
+Success returns `200` with the class DTO after its capacity has been updated. A missing class returns
+`404 CLASS_NOT_FOUND`; a class without an enrollment for the current user returns
+`404 ENROLLMENT_NOT_FOUND`.
+
+### List my classes
+
+`GET /enrollments/me?page=1&limit=10&status=upcoming`
+
+Query parameters:
+
+| Name | Default | Rules |
+| --- | ---: | --- |
+| `page` | `1` | Positive integer |
+| `limit` | `10` | Integer from 1 to 50 |
+| `status` | `upcoming` | `upcoming`, `past`, or `all` |
+
+Filtering and pagination run in PostgreSQL. Upcoming/all results use ascending start time; past
+results use descending start time. Each list item contains the standard class DTO plus `enrolledAt`.
