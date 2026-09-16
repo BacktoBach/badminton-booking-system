@@ -71,3 +71,91 @@ empty `data` array while retaining the filtered totals in `meta`.
 The successful response (`200`) contains one class DTO in `data`, using the same fields as a list
 item. An invalid UUID returns `400 VALIDATION_ERROR`; a valid UUID with no matching class returns
 `404 CLASS_NOT_FOUND`.
+
+## Admin classes
+
+All endpoints in this section require a valid authentication cookie and the current database role
+`admin`. Missing authentication returns `401`; a non-admin account returns `403 FORBIDDEN`.
+
+### List all classes
+
+`GET /admin/classes?page=1&limit=9&search=academy&level=beginner`
+
+The query contract is the same as the public list, but both past and upcoming classes are included.
+Results are ordered by `startDate DESC, id ASC`. The response uses the same class DTO and pagination
+envelope as the public list.
+
+### Create a class
+
+`POST /classes`
+
+```json
+{
+  "title": "Beginner Footwork",
+  "description": "Footwork foundations for new badminton players.",
+  "coachName": "Coach An",
+  "level": "beginner",
+  "startDate": "2026-10-01T11:00:00.000Z",
+  "schedule": "Monday and Wednesday, 18:00-19:30",
+  "location": "Court One",
+  "maxStudents": 12
+}
+```
+
+`startDate` must be a future ISO 8601 timestamp with an offset. `maxStudents` must be an integer from
+1 to 500. Unknown properties are rejected. `created_by_id` is always derived from the authenticated
+admin and cannot be supplied by the client. Success returns `201` with the created class DTO.
+
+### Update a class
+
+`PATCH /classes/:classId`
+
+The body accepts any non-empty subset of the create fields. If `startDate` is supplied, it must be in
+the future. Reducing `maxStudents` below the current enrollment count returns:
+
+```json
+{
+  "error": {
+    "code": "CAPACITY_BELOW_CURRENT_ENROLLMENTS",
+    "message": "Maximum students cannot be lower than the current enrollment count"
+  }
+}
+```
+
+Success returns `200` with the updated class DTO. A missing class returns `404 CLASS_NOT_FOUND`.
+
+### Delete a class
+
+`DELETE /classes/:classId`
+
+Success returns `204` with no response body. Related enrollment rows are deleted by the database
+foreign-key cascade. A missing class returns `404 CLASS_NOT_FOUND`.
+
+### List enrolled students
+
+`GET /classes/:classId/students?page=1&limit=20&search=nguyen`
+
+Search is case-insensitive literal matching against student name or email. It runs before pagination.
+The limit must be from 1 to 50.
+
+```json
+{
+  "data": [
+    {
+      "id": "e548f7c7-e627-424b-8330-9a13565cd18f",
+      "name": "An Nguyen",
+      "email": "an@example.com",
+      "enrolledAt": "2026-09-16T03:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "totalItems": 1,
+    "totalPages": 1
+  }
+}
+```
+
+Password hashes, role and token version are never returned. A missing class returns
+`404 CLASS_NOT_FOUND`.
