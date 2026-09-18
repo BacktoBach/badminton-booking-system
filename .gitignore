@@ -9,9 +9,8 @@ coverage/
 .DS_Store
 .npm-cache/
 
-# Local learning and manual testing guides
-backend/docs/POSTMAN_TEST_GUIDE.md
-backend/docs/POSTGRESQL_LEARNING_GUIDE.md
+# Local backend documentation
+backend/docs/
 
 # Reserved local-only source documentation
 backend/src/docs/
