@@ -13,3 +13,6 @@ coverage/
 backend/docs/POSTMAN_TEST_GUIDE.md
 backend/docs/POSTGRESQL_LEARNING_GUIDE.md
 
+# Reserved local-only source documentation
+backend/src/docs/
+

@@ -1,13 +1,26 @@
+import type { Server } from "node:http";
 import { app } from "./app.js";
 import { env } from "./config/env.js";
 import { checkDatabaseConnection, closeDatabase } from "./database/pool.js";
 
+const listen = (): Promise<Server> => new Promise((resolve, reject) => {
+  const server = app.listen(env.PORT);
+  const handleError = (error: Error): void => {
+    server.off("listening", handleListening);
+    reject(error);
+  };
+  const handleListening = (): void => {
+    server.off("error", handleError);
+    console.log(`API listening on port ${env.PORT}`);
+    resolve(server);
+  };
+  server.once("error", handleError);
+  server.once("listening", handleListening);
+});
+
 const startServer = async (): Promise<void> => {
   await checkDatabaseConnection();
-
-  const server = app.listen(env.PORT, () => {
-    console.log(`API listening on port ${env.PORT}`);
-  });
+  const server = await listen();
 
   let shuttingDown = false;
   const shutdown = (signal: NodeJS.Signals): void => {
@@ -39,7 +52,13 @@ const startServer = async (): Promise<void> => {
 };
 
 startServer().catch(async (error: unknown) => {
-  console.error("Failed to start API", error);
+  const code = error instanceof Error && "code" in error
+    ? (error as Error & { code?: string }).code
+    : undefined;
+  console.error(
+    code === "EADDRINUSE" ? `Port ${env.PORT} is already in use` : "Failed to start API",
+    error,
+  );
   try {
     await closeDatabase();
   } finally {
