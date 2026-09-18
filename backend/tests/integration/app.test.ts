@@ -81,4 +81,16 @@ describe("application foundation", () => {
     expect(response.status).toBe(403);
     expect(response.body.error.code).toBe("FORBIDDEN");
   });
+
+  it("allows safe requests without an Origin header", async () => {
+    const response = await request(app).get("/api/health");
+    expect(response.status).toBe(200);
+  });
+
+  it("does not leak implementation details for unexpected errors", async () => {
+    vi.mocked(checkDatabaseConnection).mockRejectedValueOnce("non-error database rejection");
+    const response = await request(app).get("/api/health");
+    expect(response.status).toBe(503);
+    expect(JSON.stringify(response.body)).not.toContain("non-error database rejection");
+  });
 });

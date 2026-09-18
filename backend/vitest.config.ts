@@ -20,5 +20,18 @@ export default defineConfig({
     fileParallelism: false,
     testTimeout: 15_000,
     hookTimeout: 15_000,
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html", "json-summary"],
+      reportsDirectory: "coverage",
+      include: ["src/**/*.ts", "scripts/**/*.ts", "database/seeds/**/*.ts"],
+      exclude: ["src/server.ts", "src/types/**/*.ts", "src/**/*.d.ts"],
+      thresholds: {
+        statements: 85,
+        branches: 65,
+        functions: 85,
+        lines: 85,
+      },
+    },
   },
 });

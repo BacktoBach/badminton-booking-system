@@ -1,42 +1,124 @@
 # Badminton Class Booking System
 
-Backend-first full-stack training project for managing badminton classes and enrollments.
+Backend-first application for managing badminton classes and enrollments. The backend uses Node.js,
+TypeScript, Express 5 and PostgreSQL with raw parameterized SQL—no ORM.
 
-The approved backend architecture and implementation phases are documented in
-[`backend/docs/BACKEND_SPEC.md`](backend/docs/BACKEND_SPEC.md).
+## Features
 
-## Current scope
+- HTTP-only cookie authentication with JWT revocation through `token_version`.
+- Current-database-role authorization for `admin` and `user`.
+- Public upcoming-class search, level filter, stable sorting and pagination.
+- Admin class CRUD and searchable student lists.
+- User enrollment, cancellation and personal class history.
+- Transactional row locking plus database triggers to prevent overbooking.
+- Consistent validation and error envelopes.
 
-- Backend: Node.js, TypeScript, Express and PostgreSQL using raw parameterized SQL.
-- Authentication: JWT stored only in an HTTP-only cookie.
-- Frontend: deferred until the backend passes mentor review.
+Detailed request/response examples are in
+[`backend/docs/API_CONTRACT.md`](backend/docs/API_CONTRACT.md). Architecture and implementation
+decisions are in [`backend/docs/BACKEND_SPEC.md`](backend/docs/BACKEND_SPEC.md).
 
-## Local foundation
+## Requirements
+
+- Node.js 20 or newer.
+- npm 10 or newer.
+- PostgreSQL 17.
+- Two local databases: one for development and one isolated test database.
+
+## Project structure
+
+```text
+backend/
+├─ database/       SQL migrations and development seed source
+├─ docs/           API contract and backend specification
+├─ scripts/        migration, seed and database connectivity commands
+├─ src/
+│  ├─ config/      validated environment, CORS and cookie options
+│  ├─ controllers/ HTTP input/output
+│  ├─ database/    pool, transaction and PostgreSQL error helpers
+│  ├─ middlewares/ authentication, RBAC, validation and error pipeline
+│  ├─ models/      parameterized SQL data-access layer
+│  ├─ routes/      endpoint definitions and middleware composition
+│  ├─ schemas/     Zod request schemas
+│  ├─ services/    business rules and transaction orchestration
+│  ├─ types/       cross-layer TypeScript types
+│  └─ utils/       pure technical helpers and serializers
+└─ tests/          unit and PostgreSQL integration tests
+```
+
+```text
+Route → validation/auth/RBAC → Controller → Service → Model → PostgreSQL
+```
+
+## PostgreSQL setup with pgAdmin
+
+Connect to your local server as a superuser, open Query Tool on the `postgres` database, replace the
+example password and run:
+
+```sql
+CREATE ROLE badminton_app_dev WITH LOGIN PASSWORD 'choose-a-local-password';
+CREATE DATABASE badminton_booking_dev OWNER badminton_app_dev;
+CREATE DATABASE badminton_booking_test OWNER badminton_app_dev;
+```
+
+Do not reuse a real or production password. Tests destructively recreate the `public` schema and
+refuse to do so unless PostgreSQL reports a database name ending in `_test`.
+
+## Environment configuration
+
+```powershell
+Copy-Item backend/.env.example backend/.env
+```
+
+Set the local values:
+
+```dotenv
+NODE_ENV=development
+PORT=4000
+DATABASE_URL=postgresql://badminton_app_dev:YOUR_PASSWORD@localhost:5432/badminton_booking_dev
+TEST_DATABASE_URL=postgresql://badminton_app_dev:YOUR_PASSWORD@localhost:5432/badminton_booking_test
+DATABASE_SSL=false
+JWT_SECRET=GENERATE_AT_LEAST_32_RANDOM_CHARACTERS
+JWT_EXPIRES_IN=1d
+CLIENT_ORIGINS=http://localhost:5173
+TRUST_PROXY=false
+SEED_ADMIN_NAME=Local Admin
+SEED_ADMIN_EMAIL=admin@example.com
+SEED_ADMIN_PASSWORD=CHOOSE_A_LOCAL_PASSWORD
+```
+
+`backend/.env` is ignored by Git. Never commit database credentials, JWT secrets or seed passwords.
+
+## Install and run
 
 ```powershell
 npm install
 npm run db:check
 npm run db:migrate
 npm run db:seed
-npm run typecheck:server
-npm run build:server
 npm run dev:server
 ```
 
-The health endpoint is `http://localhost:4000/api/health`.
+The API listens on `http://localhost:4000`; health endpoint: `GET /api/health`.
 
-Authentication endpoints are available under `/api/auth`: register, login, logout, `me` and
-change-password. Login stores the JWT only in an HTTP-only cookie; the token is not returned in JSON.
+Migration reruns are safe: applied filenames and SHA-256 checksums are tracked in
+`schema_migrations`. The development seed is idempotent and blocked in production.
 
-Public class endpoints are available without authentication:
+## API overview
+
+Authentication:
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+- `PUT /api/auth/change-password`
+
+Public classes:
 
 - `GET /api/classes?page=1&limit=9&search=...&level=beginner`
 - `GET /api/classes/:classId`
 
-The list contains upcoming classes only. Search and level filtering run in PostgreSQL before
-pagination, and every class includes its current enrollment count and remaining capacity.
-
-Admin-only class management endpoints:
+Admin-only class management:
 
 - `GET /api/admin/classes`
 - `POST /api/classes`
@@ -44,19 +126,44 @@ Admin-only class management endpoints:
 - `DELETE /api/classes/:classId`
 - `GET /api/classes/:classId/students`
 
-These endpoints require the HTTP-only authentication cookie and the current database role `admin`.
-
-Authenticated users can manage their enrollments:
+User-only enrollments:
 
 - `POST /api/classes/:classId/enrollments`
 - `DELETE /api/classes/:classId/enrollments`
 - `GET /api/enrollments/me?page=1&limit=10&status=upcoming`
 
-Enrollment writes use PostgreSQL transactions and row locks so concurrent requests cannot exceed a
-class's capacity.
+Login stores JWT only in an HTTP-only cookie. API consumers send credentials/cookies; the backend
+does not return a raw token for browser storage.
 
-`db:migrate` is safe to rerun: applied migrations are tracked with checksums. The development seed is
-idempotent and reads its admin account values from the ignored `backend/.env` file.
+## Tests and verification
 
-Integration tests use `TEST_DATABASE_URL` and refuse destructive cleanup unless PostgreSQL confirms
-that the connected database name ends with `_test`.
+```powershell
+npm run typecheck:server
+npm run test:server
+npm run test:coverage
+npm run build:server
+npm run db:check
+```
+
+Coverage output is written to ignored `backend/coverage/`. Integration tests use the isolated test
+database and cover authentication, RBAC, CRUD, search/filter/pagination, database constraints and
+concurrent enrollment.
+
+Run the compiled application:
+
+```powershell
+npm run build:server
+npm run start --workspace backend
+```
+
+## Security boundaries
+
+- SQL values are parameterized; dynamic update columns use a fixed allowlist.
+- Unsafe browser requests validate `Origin` against `CLIENT_ORIGINS`.
+- Credentialed CORS never uses a wildcard origin.
+- Production cookies use the `__Host-` prefix, `Secure`, `HttpOnly`, `SameSite=Lax` and path `/`.
+- JSON bodies are limited to 10 KB and authentication endpoints are rate-limited.
+- Production errors do not expose stack traces or PostgreSQL details.
+- Enrollment capacity is protected by transactions, row locks and database triggers.
+
+The frontend remains outside the workspace until backend verification is complete.

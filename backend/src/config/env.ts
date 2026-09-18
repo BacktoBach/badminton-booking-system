@@ -68,15 +68,23 @@ const envSchema = z
     }
   });
 
-const parsed = envSchema.safeParse(process.env);
+export type EnvironmentValidationDetail = { field: string; message: string };
 
-if (!parsed.success) {
-  const details = parsed.error.issues.map((issue) => ({
-    field: issue.path.join(".") || "environment",
-    message: issue.message,
-  }));
-  console.error("Invalid environment configuration", details);
-  throw new Error("Environment configuration is invalid");
+export class EnvironmentValidationError extends Error {
+  constructor(public readonly details: EnvironmentValidationDetail[]) {
+    super("Environment configuration is invalid");
+    this.name = "EnvironmentValidationError";
+  }
 }
 
-export const env = Object.freeze(parsed.data);
+export const parseEnvironment = (runtimeEnv: NodeJS.ProcessEnv) => {
+  const parsed = envSchema.safeParse(runtimeEnv);
+  if (parsed.success) return parsed.data;
+
+  throw new EnvironmentValidationError(parsed.error.issues.map((issue) => ({
+    field: issue.path.join(".") || "environment",
+    message: issue.message,
+  })));
+};
+
+export const env = Object.freeze(parseEnvironment(process.env));

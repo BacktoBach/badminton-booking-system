@@ -14,6 +14,74 @@ All endpoints are prefixed with `/api`. JSON errors use the shared shape:
 
 `details` is present only when additional safe validation information is available.
 
+## Health
+
+`GET /health` returns `200` with `{ "status": "ok", "database": "connected", "uptime": 123 }`.
+If PostgreSQL is unavailable it returns `503 DATABASE_UNAVAILABLE` without database details.
+
+## Authentication
+
+Authentication uses a JWT stored only in an HTTP-only cookie. Clients must send cookies/credentials;
+no endpoint returns the raw token. Development uses `auth_session`; production uses the secure
+`__Host-auth_session` cookie.
+
+### Register
+
+`POST /auth/register`
+
+```json
+{
+  "name": "Student One",
+  "email": "student@example.com",
+  "password": "Password123"
+}
+```
+
+Success returns `201` with `data.user` containing `id`, `name`, `email` and role `user`. Public
+registration cannot set role. Duplicate email returns `409 EMAIL_ALREADY_EXISTS`.
+
+### Login
+
+`POST /auth/login`
+
+```json
+{
+  "email": "student@example.com",
+  "password": "Password123",
+  "remember": true
+}
+```
+
+Success returns `200`, sets the HTTP-only cookie and returns `data.user` plus
+`data.session.expiresAt`. `remember: true` gives the cookie a one-day max age; otherwise it is a
+browser-session cookie. Unknown email and incorrect password both return the same
+`401 INVALID_CREDENTIALS` response.
+
+### Current session
+
+`GET /auth/me`
+
+Requires a valid cookie. Success returns `data.user` and `data.session.expiresAt`. Missing, invalid,
+expired or revoked sessions return `401` with `AUTH_REQUIRED`, `INVALID_TOKEN` or `TOKEN_REVOKED`.
+
+### Change password
+
+`PUT /auth/change-password`
+
+```json
+{
+  "oldPassword": "Password123",
+  "newPassword": "NewPassword123"
+}
+```
+
+Success returns `200`, increments `token_version` and clears the cookie so every existing token is
+rejected. An incorrect current password returns `400 CURRENT_PASSWORD_INCORRECT`.
+
+### Logout
+
+`POST /auth/logout` always returns `200` and clears the cookie, including when no session exists.
+
 ## Public classes
 
 ### List upcoming classes
