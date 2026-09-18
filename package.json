@@ -10,6 +10,8 @@
     "build:server": "npm run build --workspace backend",
     "typecheck:server": "npm run typecheck --workspace backend",
     "test:server": "npm run test --workspace backend",
+    "test:coverage": "npm run test:coverage --workspace backend",
+    "verify:server": "npm run typecheck:server && npm run test:coverage && npm run build:server && npm run db:check",
     "db:check": "npm run db:check --workspace backend",
     "db:migrate": "npm run db:migrate --workspace backend",
     "db:migrate:test": "npm run db:migrate:test --workspace backend",

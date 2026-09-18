@@ -5,7 +5,7 @@
 Tài liệu này là nguồn sự thật cho giai đoạn backend. Nếu code, API contract hoặc database design thay đổi, phải cập nhật tài liệu trước hoặc trong cùng thay đổi.
 
 - Trạng thái: **Phase 5 implemented on feature branch — automated verification passed**.
-- Phạm vi hiện tại: backend trước, mentor review xong mới triển khai frontend.
+- Phạm vi hiện tại: hoàn thiện và kiểm định backend trước khi triển khai frontend.
 - Runtime: Node.js + TypeScript + Express 5.
 - Database: PostgreSQL 17 local, quản lý bằng pgAdmin 4.
 - Data access: package `pg`, raw parameterized SQL, không dùng Prisma hoặc ORM.
@@ -114,7 +114,7 @@ Root `package.json` sau đó phải được model chỉnh thành private worksp
 }
 ```
 
-Chưa thêm `frontend` vào workspace. Chỉ bổ sung sau khi backend được mentor duyệt.
+Chưa thêm `frontend` vào workspace. Chỉ bổ sung sau khi backend hoàn tất kiểm định.
 
 ### 3.4. Kết nối PostgreSQL trong pgAdmin
 
@@ -795,15 +795,16 @@ Implementation status on 2026-09-15:
 - Duplicate/full/past-class errors.
 - Concurrency test.
 
-### Phase 6 — Backend hardening và mentor handoff
+### Phase 6 — Backend hardening và handoff
 
+- Implementation status: completed on `feat/backend-hardening` from Phase 5 merge commit `0dca3c6`; final verification results are recorded in the branch handoff.
 - Full tests và coverage report.
 - API contract.
 - README hoàn thiện.
 - Secret scan.
 - Migration-from-empty verification.
 - Production build.
-- Mentor checklist.
+- Postman và PostgreSQL learning guides chỉ lưu local, được Git ignore.
 
 Không bắt đầu frontend trước khi Phase 6 được duyệt.
 
@@ -843,24 +844,24 @@ Test helper chỉ được cleanup database có tên kết thúc bằng `_test`.
 
 ## 14. Backend Definition of Done
 
-- [ ] Typecheck pass.
-- [ ] Production build pass.
-- [ ] Unit và integration tests pass.
-- [ ] Migration chạy được từ database trống.
-- [ ] Migration rerun an toàn.
-- [ ] Seed idempotent.
-- [ ] JWT không xuất hiện trong response hoặc Web Storage contract.
-- [ ] Public register không tạo được admin.
-- [ ] RBAC enforce ở backend.
-- [ ] Search/filter/pagination chạy trong PostgreSQL.
-- [ ] Duplicate enrollment bị chặn.
-- [ ] Concurrency test chứng minh không overbook.
-- [ ] Không giảm capacity dưới enrollment count.
-- [ ] Student list chính xác.
-- [ ] Error response nhất quán.
-- [ ] CORS, cookie và Origin validation đúng.
-- [ ] Không có secret trong repository.
-- [ ] Mentor có thể clone và chạy từ database trống bằng README.
+- [x] Typecheck pass.
+- [x] Production build pass.
+- [x] Unit và integration tests pass.
+- [x] Migration chạy được từ database trống.
+- [x] Migration rerun an toàn.
+- [x] Seed idempotent.
+- [x] JWT không xuất hiện trong response hoặc Web Storage contract.
+- [x] Public register không tạo được admin.
+- [x] RBAC enforce ở backend.
+- [x] Search/filter/pagination chạy trong PostgreSQL.
+- [x] Duplicate enrollment bị chặn.
+- [x] Concurrency test chứng minh không overbook.
+- [x] Không giảm capacity dưới enrollment count.
+- [x] Student list chính xác.
+- [x] Error response nhất quán.
+- [x] CORS, cookie và Origin validation đúng.
+- [x] Không có secret trong repository.
+- [x] Có thể clone và chạy từ database trống bằng README.
 
 ---
 

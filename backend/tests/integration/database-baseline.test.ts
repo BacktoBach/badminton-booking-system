@@ -100,6 +100,37 @@ describe("database baseline", () => {
     ]);
   });
 
+  it("creates required extensions, indexes and business-rule triggers from empty", async () => {
+    const extensions = await databasePool.query<{ extname: string }>(
+      "SELECT extname FROM pg_extension WHERE extname IN ('pgcrypto', 'pg_trgm') ORDER BY extname",
+    );
+    expect(extensions.rows.map((row) => row.extname)).toEqual(["pg_trgm", "pgcrypto"]);
+
+    const indexes = await databasePool.query<{ indexname: string }>(
+      `SELECT indexname FROM pg_indexes
+       WHERE schemaname = 'public'
+         AND indexname IN (
+           'users_email_lower_unique', 'classes_start_date_idx',
+           'classes_level_start_date_idx', 'classes_title_trgm_idx',
+           'enrollments_user_id_enrolled_at_idx'
+         )
+       ORDER BY indexname`,
+    );
+    expect(indexes.rows.map((row) => row.indexname)).toHaveLength(5);
+
+    const triggers = await databasePool.query<{ trigger_name: string }>(
+      `SELECT trigger_name FROM information_schema.triggers
+       WHERE trigger_schema = 'public'
+       ORDER BY trigger_name`,
+    );
+    expect(triggers.rows.map((row) => row.trigger_name)).toEqual(expect.arrayContaining([
+      "classes_set_updated_at",
+      "classes_validate_capacity_update",
+      "enrollments_validate_capacity",
+      "users_set_updated_at",
+    ]));
+  });
+
   it("rejects checksum drift in an applied migration", async () => {
     const temporaryDirectory = await mkdtemp(join(tmpdir(), "badminton-migration-drift-"));
     try {
