@@ -6,6 +6,7 @@
     "backend"
   ],
   "scripts": {
+    "dev": "npm run dev --workspace backend",
     "dev:server": "npm run dev --workspace backend",
     "build:server": "npm run build --workspace backend",
     "typecheck:server": "npm run typecheck --workspace backend",

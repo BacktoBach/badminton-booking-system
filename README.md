@@ -1,169 +1,158 @@
 # Badminton Class Booking System
 
-Backend-first application for managing badminton classes and enrollments. The backend uses Node.js,
-TypeScript, Express 5 and PostgreSQL with raw parameterized SQL—no ORM.
+Backend quản lý lớp học cầu lông, được xây dựng bằng Node.js, TypeScript, Express 5 và PostgreSQL với raw parameterized SQL, không sử dụng ORM.
 
-## Features
+## Liên kết
 
-- HTTP-only cookie authentication with JWT revocation through `token_version`.
-- Current-database-role authorization for `admin` and `user`.
-- Public upcoming-class search, level filter, stable sorting and pagination.
-- Admin class CRUD and searchable student lists.
-- User enrollment, cancellation and personal class history.
-- Transactional row locking plus database triggers to prevent overbooking.
-- Consistent validation and error envelopes.
+| Môi trường      | URL                                                                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Backend production | [badminton-booking-system-0xi7.onrender.com](https://badminton-booking-system-0xi7.onrender.com)                       |
+| Health check       | [badminton-booking-system-0xi7.onrender.com/api/health](https://badminton-booking-system-0xi7.onrender.com/api/health) |
 
-Detailed request/response examples are in
-[`backend/docs/API_CONTRACT.md`](backend/docs/API_CONTRACT.md). Architecture and implementation
-decisions are in [`backend/docs/BACKEND_SPEC.md`](backend/docs/BACKEND_SPEC.md).
+Production đã được kiểm tra với Render PostgreSQL: health check, public class list và Postman authentication đều hoạt động.
 
-## Requirements
+## Tài khoản admin
 
-- Node.js 20 or newer.
-- npm 10 or newer.
-- PostgreSQL 17.
-- Two local databases: one for development and one isolated test database.
+| Role      | Email                  | Mật khẩu       |
+| --------- | ---------------------- | ---------------- |
+| `admin` | `testdb@example.com` | `Password123`  |
 
-## Project structure
+Đây là tài khoản kiểm thử tạm thời và sẽ được xóa sau khi hoàn tất review.
+
+## Chức năng chính
+
+- Authentication bằng JWT trong HTTP-only cookie.
+- Đổi mật khẩu làm mất hiệu lực toàn bộ token cũ thông qua `token_version`.
+- RBAC sử dụng role mới nhất đọc từ PostgreSQL.
+- Guest xem, tìm kiếm và lọc các lớp sắp khai giảng.
+- Admin tạo, sửa, xóa lớp và xem danh sách học viên.
+- User đăng ký, hủy đăng ký và xem các lớp đã đăng ký.
+- Transaction, row lock và database trigger chống overbooking.
+- Search/filter chạy trong PostgreSQL trước pagination.
+- Error response và validation thống nhất.
+
+## Kiến trúc
+
+```text
+Route
+→ Validation / Authentication / RBAC
+→ Controller
+→ Service
+→ Model
+→ PostgreSQL
+```
 
 ```text
 backend/
-├─ database/       SQL migrations and development seed source
-├─ docs/           API contract and backend specification
-├─ scripts/        migration, seed and database connectivity commands
+├─ database/       Migration và development seed
+├─ docs/           API contract và backend specification
+├─ scripts/        Migrate, seed và database check
 ├─ src/
-│  ├─ config/      validated environment, CORS and cookie options
+│  ├─ config/      Environment, CORS và cookie
 │  ├─ controllers/ HTTP input/output
-│  ├─ database/    pool, transaction and PostgreSQL error helpers
-│  ├─ middlewares/ authentication, RBAC, validation and error pipeline
-│  ├─ models/      parameterized SQL data-access layer
-│  ├─ routes/      endpoint definitions and middleware composition
-│  ├─ schemas/     Zod request schemas
-│  ├─ services/    business rules and transaction orchestration
-│  ├─ types/       cross-layer TypeScript types
-│  └─ utils/       pure technical helpers and serializers
-└─ tests/          unit and PostgreSQL integration tests
+│  ├─ database/    Pool, transaction và PostgreSQL error helper
+│  ├─ errors/      AppError và error code
+│  ├─ middlewares/ Authentication, RBAC, validation và error pipeline
+│  ├─ models/      Data-access layer
+│  ├─ routes/      Khai báo endpoint
+│  ├─ schemas/     Zod request schema
+│  ├─ services/    Business rules và transaction orchestration
+│  ├─ types/       Type dùng qua nhiều layer
+│  └─ utils/       Pure helper và serializer
+└─ tests/          Unit test và PostgreSQL integration test
 ```
 
-```text
-Route → validation/auth/RBAC → Controller → Service → Model → PostgreSQL
+## API endpoints
+
+### Health và authentication
+
+| Method   | Endpoint                      | Quyền            | Mô tả                                       | Thành công |
+| -------- | ----------------------------- | ----------------- | --------------------------------------------- | ------------ |
+| `GET`  | `/api/health`               | Public            | Kiểm tra API và PostgreSQL                  | `200`      |
+| `POST` | `/api/auth/register`        | Public            | Đăng ký tài khoản với role`user`      | `201`      |
+| `POST` | `/api/auth/login`           | Public            | Đăng nhập và thiết lập HTTP-only cookie | `200`      |
+| `POST` | `/api/auth/logout`          | Public            | Xóa authentication cookie                    | `200`      |
+| `GET`  | `/api/auth/me`              | Đã đăng nhập | Lấy user và thời điểm hết hạn session  | `200`      |
+| `PUT`  | `/api/auth/change-password` | Đã đăng nhập | Đổi mật khẩu và thu hồi token cũ       | `200`      |
+
+### Classes
+
+| Method     | Endpoint                           | Quyền | Mô tả                                                                   | Thành công |
+| ---------- | ---------------------------------- | ------ | ------------------------------------------------------------------------- | ------------ |
+| `GET`    | `/api/classes`                   | Public | Danh sách lớp sắp khai giảng, search, lọc trình độ và pagination | `200`      |
+| `GET`    | `/api/classes/:classId`          | Public | Chi tiết lớp và số chỗ hiện tại                                    | `200`      |
+| `GET`    | `/api/admin/classes`             | Admin  | Danh sách tất cả lớp, gồm cả lớp đã bắt đầu                   | `200`      |
+| `POST`   | `/api/classes`                   | Admin  | Tạo lớp; người tạo lấy từ session admin                            | `201`      |
+| `PATCH`  | `/api/classes/:classId`          | Admin  | Cập nhật một phần thông tin lớp                                     | `200`      |
+| `DELETE` | `/api/classes/:classId`          | Admin  | Xóa lớp và cascade enrollment                                          | `204`      |
+| `GET`    | `/api/classes/:classId/students` | Admin  | Search và pagination danh sách học viên                               | `200`      |
+
+### Enrollments
+
+| Method     | Endpoint                              | Quyền | Mô tả                                                                  | Thành công |
+| ---------- | ------------------------------------- | ------ | ------------------------------------------------------------------------ | ------------ |
+| `POST`   | `/api/classes/:classId/enrollments` | User   | Đăng ký lớp bằng transaction và row lock                           | `201`      |
+| `DELETE` | `/api/classes/:classId/enrollments` | User   | Hủy đăng ký của user hiện tại                                     | `200`      |
+| `GET`    | `/api/enrollments/me`               | User   | Các lớp đã đăng ký; lọc theo`upcoming`, `past` hoặc `all` | `200`      |
+
+Request/response đầy đủ nằm trong [API contract](backend/docs/API_CONTRACT.md).
+
+## Error contract
+
+```json
+{
+  "error": {
+    "code": "CLASS_FULL",
+    "message": "This class has reached its maximum capacity"
+  }
+}
 ```
 
-## PostgreSQL setup with pgAdmin
+|    HTTP | Error code chính                                                                             | Khi xảy ra                                                            |
+| ------: | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `400` | `VALIDATION_ERROR`, `CURRENT_PASSWORD_INCORRECT`, `MALFORMED_JSON`                      | Body/query/params sai hoặc mật khẩu hiện tại sai                  |
+| `401` | `AUTH_REQUIRED`, `INVALID_TOKEN`, `TOKEN_REVOKED`, `INVALID_CREDENTIALS`              | Thiếu cookie, token sai/hết hạn/bị thu hồi hoặc đăng nhập sai |
+| `403` | `FORBIDDEN`                                                                                 | Role hoặc browser Origin không được phép                         |
+| `404` | `CLASS_NOT_FOUND`, `ENROLLMENT_NOT_FOUND`, `ROUTE_NOT_FOUND`                            | Resource hoặc route không tồn tại                                  |
+| `409` | `EMAIL_ALREADY_EXISTS`, `DUPLICATE_ENROLLMENT`, `CLASS_FULL`, `CLASS_ALREADY_STARTED` | Xung đột dữ liệu hoặc business rule                               |
+| `409` | `CAPACITY_BELOW_CURRENT_ENROLLMENTS`                                                        | Giảm capacity thấp hơn số học viên hiện tại                    |
+| `413` | `PAYLOAD_TOO_LARGE`                                                                         | JSON vượt giới hạn 10 KB                                           |
+| `429` | `TOO_MANY_REQUESTS`                                                                         | Vượt auth rate limit                                                 |
+| `503` | `DATABASE_UNAVAILABLE`                                                                      | Health check không kết nối được PostgreSQL                       |
 
-Connect to your local server as a superuser, open Query Tool on the `postgres` database, replace the
-example password and run:
+## Cài đặt local
 
-```sql
-CREATE ROLE badminton_app_dev WITH LOGIN PASSWORD 'choose-a-local-password';
-CREATE DATABASE badminton_booking_dev OWNER badminton_app_dev;
-CREATE DATABASE badminton_booking_test OWNER badminton_app_dev;
-```
+### Yêu cầu
 
-Do not reuse a real or production password. Tests destructively recreate the `public` schema and
-refuse to do so unless PostgreSQL reports a database name ending in `_test`.
+- Node.js 20 trở lên.
+- npm 10 trở lên.
+- PostgreSQL 17.
+- Một development database và một test database độc lập.
 
-## Environment configuration
+### Environment
 
 ```powershell
 Copy-Item backend/.env.example backend/.env
 ```
 
-Set the local values:
+Điền giá trị local trong `backend/.env`. Không commit database password, JWT secret hoặc seed password.
 
-```dotenv
-NODE_ENV=development
-PORT=4000
-DATABASE_URL=postgresql://badminton_app_dev:YOUR_PASSWORD@localhost:5432/badminton_booking_dev
-TEST_DATABASE_URL=postgresql://badminton_app_dev:YOUR_PASSWORD@localhost:5432/badminton_booking_test
-DATABASE_SSL=false
-JWT_SECRET=GENERATE_AT_LEAST_32_RANDOM_CHARACTERS
-JWT_EXPIRES_IN=1d
-CLIENT_ORIGINS=http://localhost:5173
-TRUST_PROXY=false
-SEED_ADMIN_NAME=Local Admin
-SEED_ADMIN_EMAIL=admin@example.com
-SEED_ADMIN_PASSWORD=CHOOSE_A_LOCAL_PASSWORD
-```
-
-`backend/.env` is ignored by Git. Never commit database credentials, JWT secrets or seed passwords.
-
-## Install and run
+### Cài dependency và chạy
 
 ```powershell
 npm install
 npm run db:check
 npm run db:migrate
 npm run db:seed
-npm run dev:server
+npm run dev
 ```
 
-The API listens on `http://localhost:4000`; health endpoint: `GET /api/health`.
+API local chạy tại `http://localhost:4000`.
 
-Migration reruns are safe: applied filenames and SHA-256 checksums are tracked in
-`schema_migrations`. The development seed is idempotent and blocked in production.
+## Bảo mật và production
 
-## API overview
-
-Authentication:
-
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-- `PUT /api/auth/change-password`
-
-Public classes:
-
-- `GET /api/classes?page=1&limit=9&search=...&level=beginner`
-- `GET /api/classes/:classId`
-
-Admin-only class management:
-
-- `GET /api/admin/classes`
-- `POST /api/classes`
-- `PATCH /api/classes/:classId`
-- `DELETE /api/classes/:classId`
-- `GET /api/classes/:classId/students`
-
-User-only enrollments:
-
-- `POST /api/classes/:classId/enrollments`
-- `DELETE /api/classes/:classId/enrollments`
-- `GET /api/enrollments/me?page=1&limit=10&status=upcoming`
-
-Login stores JWT only in an HTTP-only cookie. API consumers send credentials/cookies; the backend
-does not return a raw token for browser storage.
-
-## Tests and verification
-
-```powershell
-npm run typecheck:server
-npm run test:server
-npm run test:coverage
-npm run build:server
-npm run db:check
-```
-
-Coverage output is written to ignored `backend/coverage/`. Integration tests use the isolated test
-database and cover authentication, RBAC, CRUD, search/filter/pagination, database constraints and
-concurrent enrollment.
-
-Run the compiled application:
-
-```powershell
-npm run build:server
-npm run start --workspace backend
-```
-
-## Security boundaries
-
-- SQL values are parameterized; dynamic update columns use a fixed allowlist.
-- Unsafe browser requests validate `Origin` against `CLIENT_ORIGINS`.
-- Credentialed CORS never uses a wildcard origin.
-- Production cookies use the `__Host-` prefix, `Secure`, `HttpOnly`, `SameSite=Lax` and path `/`.
-- JSON bodies are limited to 10 KB and authentication endpoints are rate-limited.
-- Production errors do not expose stack traces or PostgreSQL details.
-- Enrollment capacity is protected by transactions, row locks and database triggers.
-
-The frontend remains outside the workspace until backend verification is complete.
+- Production cookie: `__Host-auth_session`, `Secure`, `HttpOnly`, `SameSite=Lax`, path `/`.
+- Render sử dụng `PORT` do nền tảng cung cấp và `TRUST_PROXY=true`.
+- Render Web Service nên dùng Internal Database URL cùng region.
+- Không chạy development seed khi `NODE_ENV=production`.
+- Frontend khác domain nên gọi backend qua rewrite/proxy `/api` để giữ cookie `SameSite=Lax`.
