@@ -9,6 +9,7 @@ import type {
 } from "../types/class.js";
 
 type CountRow = { total: number };
+type ClassStartDateRow = { start_date: Date };
 
 const escapeLikePattern = (value: string): string =>
   value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
@@ -136,6 +137,17 @@ export const createClass = async (
   const classRecord = result.rows[0];
   if (!classRecord) throw new Error("Class insert returned no row");
   return classRecord;
+};
+
+export const findClassStartDateForUpdate = async (
+  database: DatabaseClient,
+  classId: string,
+): Promise<ClassStartDateRow | null> => {
+  const result = await database.query<ClassStartDateRow>(
+    "SELECT start_date FROM classes WHERE id = $1 FOR UPDATE",
+    [classId],
+  );
+  return result.rows[0] ?? null;
 };
 
 export const updateClass = async (

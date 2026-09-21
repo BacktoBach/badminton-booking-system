@@ -50,6 +50,10 @@ export const enrollmentPaths = {
           description: "Class or enrollment does not exist",
           content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
         },
+        "409": {
+          description: "The class has already started and the enrollment history is immutable",
+          content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
+        },
       },
     },
   },

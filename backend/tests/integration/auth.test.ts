@@ -9,7 +9,10 @@ import { pool } from "../../src/database/pool.js";
 import { authenticate } from "../../src/middlewares/authenticate.js";
 import { authorize } from "../../src/middlewares/authorize.js";
 import { errorHandler } from "../../src/middlewares/error-handler.js";
-import { createAuthRateLimiter } from "../../src/middlewares/rate-limit.js";
+import {
+  createAuthRateLimiter,
+  createIpEmailRateLimitKey,
+} from "../../src/middlewares/rate-limit.js";
 import { runMigrations } from "../../scripts/migrate.js";
 import {
   assertTestDatabase,
@@ -215,5 +218,27 @@ describe("authentication rate limiter", () => {
     expect(response.body).toEqual({
       error: { code: "TOO_MANY_REQUESTS", message: "Limited" },
     });
+  });
+
+  it("isolates the strict limit by normalized email for users sharing an IP", async () => {
+    const limitedApp = express();
+    limitedApp.use(express.json());
+    limitedApp.post(
+      "/login",
+      createAuthRateLimiter({
+        windowMs: 60_000,
+        limit: 1,
+        message: "Limited",
+        keyGenerator: createIpEmailRateLimitKey,
+      }),
+      (_request, response) => response.status(401).end(),
+    );
+
+    expect((await request(limitedApp).post("/login").send({ email: "ONE@example.com" })).status)
+      .toBe(401);
+    expect((await request(limitedApp).post("/login").send({ email: " one@example.com " })).status)
+      .toBe(429);
+    expect((await request(limitedApp).post("/login").send({ email: "two@example.com" })).status)
+      .toBe(401);
   });
 });

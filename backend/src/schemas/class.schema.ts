@@ -13,7 +13,12 @@ export const classListQuerySchema = z
 export const classParamsSchema = z.object({ classId: z.string().uuid() }).strict();
 
 const titleSchema = z.string().trim().min(3).max(150);
-const descriptionSchema = z.string().trim().min(10).max(5_000);
+const descriptionSchema = z
+  .string()
+  .trim()
+  .min(10)
+  .max(5_000)
+  .describe("Plain text only; clients must not render this value as raw HTML");
 const coachNameSchema = z.string().trim().min(2).max(100);
 const startDateSchema = z.iso.datetime({ offset: true }).refine(
   (value) => new Date(value).getTime() > Date.now(),
