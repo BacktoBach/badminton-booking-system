@@ -64,7 +64,14 @@ export const enrollInClass = async (classId: string, userId: string) => {
 
 export const cancelClassEnrollment = async (classId: string, userId: string) =>
   withTransaction(async (client) => {
-    await requireLockedClass(classId, client);
+    const classRecord = await requireLockedClass(classId, client);
+    if (classRecord.start_date.getTime() <= Date.now()) {
+      throw new AppError(
+        409,
+        "CLASS_ALREADY_STARTED",
+        "Cannot cancel enrollment for a class that has already started",
+      );
+    }
     if (!(await deleteEnrollment(client, classId, userId))) {
       throw new AppError(404, "ENROLLMENT_NOT_FOUND", "Enrollment was not found");
     }

@@ -157,6 +157,33 @@ describe("enrollment API", () => {
     expect(missing.body.error.code).toBe("ENROLLMENT_NOT_FOUND");
   });
 
+  it("does not cancel enrollment after the class has started", async () => {
+    const classId = await insertTestClass(pool, {
+      ownerId: adminId,
+      title: "Started Enrollment",
+      startsInHours: 1,
+    });
+    await pool.query("INSERT INTO enrollments (class_id, user_id) VALUES ($1, $2)", [
+      classId,
+      userId,
+    ]);
+    await pool.query("UPDATE classes SET start_date = NOW() - INTERVAL '1 hour' WHERE id = $1", [
+      classId,
+    ]);
+
+    const response = await request(app)
+      .delete(`/api/classes/${classId}/enrollments`)
+      .set("Cookie", userCookie);
+
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe("CLASS_ALREADY_STARTED");
+    const stored = await pool.query(
+      "SELECT 1 FROM enrollments WHERE class_id = $1 AND user_id = $2",
+      [classId, userId],
+    );
+    expect(stored.rowCount).toBe(1);
+  });
+
   it("lists only the user's classes with status filtering and live counts", async () => {
     const upcomingId = await insertTestClass(pool, {
       ownerId: adminId,

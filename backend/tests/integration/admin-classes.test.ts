@@ -201,6 +201,33 @@ describe("admin classes API", () => {
     });
   });
 
+  it("does not allow a started class to be rescheduled as upcoming", async () => {
+    const classId = await insertClass(pool, adminId, {
+      title: "Completed Class",
+      startsInHours: -24,
+    });
+    const futureStartDate = new Date(Date.now() + 48 * 60 * 60 * 1_000).toISOString();
+
+    const rejected = await request(app)
+      .patch(`/api/classes/${classId}`)
+      .set("Cookie", adminCookie)
+      .send({ startDate: futureStartDate });
+
+    expect(rejected.status).toBe(409);
+    expect(rejected.body.error.code).toBe("CLASS_ALREADY_STARTED");
+    const stored = await pool.query<{ start_date: Date }>(
+      "SELECT start_date FROM classes WHERE id = $1",
+      [classId],
+    );
+    expect(stored.rows[0]!.start_date.getTime()).toBeLessThanOrEqual(Date.now());
+
+    const metadataUpdate = await request(app)
+      .patch(`/api/classes/${classId}`)
+      .set("Cookie", adminCookie)
+      .send({ description: "Updated historical class notes remain plain text." });
+    expect(metadataUpdate.status).toBe(200);
+  });
+
   it("returns a searchable, paginated student list without sensitive fields", async () => {
     const classId = await insertClass(pool, adminId, { title: "Student List Class" });
     const anId = await insertUser(pool, {

@@ -115,7 +115,11 @@ export const components = {
       properties: {
         id: { type: "string", format: "uuid" },
         title: { type: "string", example: "Badminton Foundation" },
-        description: { type: "string", example: "Lớp nền tảng dành cho học viên mới bắt đầu." },
+        description: {
+          type: "string",
+          description: "Plain text only. Clients must render this value as text, never as raw HTML.",
+          example: "Lớp nền tảng dành cho học viên mới bắt đầu.",
+        },
         coachName: { type: "string", example: "Coach Minh" },
         level: { $ref: "#/components/schemas/ClassLevel" },
         startDate: { type: "string", format: "date-time" },
@@ -156,7 +160,12 @@ export const components = {
       ],
       properties: {
         title: { type: "string", minLength: 3, maxLength: 150 },
-        description: { type: "string", minLength: 10, maxLength: 5000 },
+        description: {
+          type: "string",
+          minLength: 10,
+          maxLength: 5000,
+          description: "Plain text only. HTML markup is not supported.",
+        },
         coachName: { type: "string", minLength: 2, maxLength: 100 },
         level: { $ref: "#/components/schemas/ClassLevel" },
         startDate: {
@@ -185,7 +194,12 @@ export const components = {
       minProperties: 1,
       properties: {
         title: { type: "string", minLength: 3, maxLength: 150 },
-        description: { type: "string", minLength: 10, maxLength: 5000 },
+        description: {
+          type: "string",
+          minLength: 10,
+          maxLength: 5000,
+          description: "Plain text only. HTML markup is not supported.",
+        },
         coachName: { type: "string", minLength: 2, maxLength: 100 },
         level: { $ref: "#/components/schemas/ClassLevel" },
         startDate: { type: "string", format: "date-time" },

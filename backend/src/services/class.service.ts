@@ -1,9 +1,11 @@
 import { pool } from "../database/pool.js";
 import { AppError } from "../errors/app-error.js";
 import { hasPostgresConstraint } from "../database/postgres-error.js";
+import { withTransaction } from "../database/transaction.js";
 import {
   createClass,
   deleteClass,
+  findClassStartDateForUpdate,
   findPublicClassById,
   listAdminClasses,
   listClassStudents,
@@ -53,9 +55,23 @@ export const updateAdminClass = async (
   input: UpdateClassInput,
 ): Promise<PublicClass> => {
   try {
-    const record = await updateClass(pool, classId, input);
-    if (!record) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
-    return toPublicClass(record);
+    return await withTransaction(async (client) => {
+      if (input.startDate !== undefined) {
+        const currentClass = await findClassStartDateForUpdate(client, classId);
+        if (!currentClass) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
+        if (currentClass.start_date.getTime() <= Date.now()) {
+          throw new AppError(
+            409,
+            "CLASS_ALREADY_STARTED",
+            "The start date of a class that has already started cannot be changed",
+          );
+        }
+      }
+
+      const record = await updateClass(client, classId, input);
+      if (!record) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
+      return toPublicClass(record);
+    });
   } catch (error) {
     if (hasPostgresConstraint(error, "classes_capacity_not_below_enrollments")) {
       throw new AppError(

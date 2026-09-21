@@ -63,7 +63,7 @@ export const classPaths = {
         ...protectedErrors,
         "404": { $ref: "#/components/responses/ClassNotFound" },
         "409": {
-          description: "Maximum capacity is below the current enrollment count",
+          description: "Maximum capacity is below current enrollment, or a started class is being rescheduled",
           content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
         },
       },
