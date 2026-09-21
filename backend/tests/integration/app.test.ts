@@ -82,6 +82,39 @@ describe("application foundation", () => {
     expect(response.body.error.code).toBe("FORBIDDEN");
   });
 
+  it("allows same-origin unsafe requests used by Swagger UI", async () => {
+    const response = await request(app)
+      .post("/api/missing")
+      .set("Host", "api.example.com")
+      .set("Origin", "http://api.example.com");
+
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe("ROUTE_NOT_FOUND");
+    expect(response.headers["access-control-allow-origin"]).toBe("http://api.example.com");
+  });
+
+  it("serves the OpenAPI document", async () => {
+    const response = await request(app).get("/api/docs.json");
+
+    expect(response.status).toBe(200);
+    expect(response.body.openapi).toBe("3.0.3");
+    expect(response.body.info.title).toBe("Badminton Class Booking API");
+    expect(response.body.paths).toHaveProperty("/api/auth/login");
+    expect(response.body.paths).toHaveProperty("/api/classes/{classId}/enrollments");
+    expect(response.body.components.securitySchemes.cookieAuth).toMatchObject({
+      type: "apiKey",
+      in: "cookie",
+    });
+  });
+
+  it("serves Swagger UI without the incompatible content security policy", async () => {
+    const response = await request(app).get("/api/docs/");
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain("Badminton Booking API Docs");
+    expect(response.headers).not.toHaveProperty("content-security-policy");
+  });
+
   it("allows safe requests without an Origin header", async () => {
     const response = await request(app).get("/api/health");
     expect(response.status).toBe(200);
