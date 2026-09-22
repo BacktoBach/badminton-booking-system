@@ -8,15 +8,15 @@ Backend quản lý lớp học cầu lông, được xây dựng bằng Node.js,
 | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
 | Backend production | [badminton-booking-system-0xi7.onrender.com](https://badminton-booking-system-0xi7.onrender.com)                       |
 | Health check       | [badminton-booking-system-0xi7.onrender.com/api/health](https://badminton-booking-system-0xi7.onrender.com/api/health) |
-| Swagger UI         | [badminton-booking-system-0xi7.onrender.com/api/docs](https://badminton-booking-system-0xi7.onrender.com/api/docs)     |
+| Swagger UI         | [badminton-booking-system-0xi7.onrender.com/api/docs/](https://badminton-booking-system-0xi7.onrender.com/api/docs/) |
 
 Production đã được kiểm tra với Render PostgreSQL: health check, public class list và Postman authentication đều hoạt động.
 
 ## Tài khoản admin
 
-| Role      | Email                  | Mật khẩu       |
-| --------- | ---------------------- | ---------------- |
-| `admin` | `testdb@example.com` | `Password123`  |
+| Role      | Email                  | Mật khẩu      |
+| --------- | ---------------------- | --------------- |
+| `admin` | `testdb@example.com` | `Password123` |
 
 Đây là tài khoản kiểm thử tạm thời và sẽ được xóa sau khi hoàn tất review.
 
