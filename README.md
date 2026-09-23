@@ -1,6 +1,6 @@
 # Badminton Class Booking System
 
-Backend quản lý lớp học cầu lông, được xây dựng bằng Node.js, TypeScript, Express 5 và PostgreSQL với raw parameterized SQL, không sử dụng ORM.
+Ứng dụng full-stack quản lý lớp học cầu lông. Backend dùng Node.js, TypeScript, Express 5 và PostgreSQL với raw parameterized SQL; frontend dùng React, TypeScript, React Query và HTTP-only cookie authentication.
 
 ## Liên kết
 
@@ -44,6 +44,14 @@ Route
 ```
 
 ```text
+Frontend Page
+→ React Query Hook
+→ Service
+→ Axios client
+→ Backend API
+```
+
+```text
 backend/
 ├─ database/       Migration và development seed
 ├─ docs/           API contract và backend specification
@@ -61,6 +69,18 @@ backend/
 │  ├─ types/       Type dùng qua nhiều layer
 │  └─ utils/       Pure helper và serializer
 └─ tests/          Unit test và PostgreSQL integration test
+
+frontend/
+├─ src/components/ UI component dùng chung và theo domain
+├─ src/config/     Axios, environment và QueryClient
+├─ src/contexts/   Toast notification context
+├─ src/hooks/      React Query hooks theo domain
+├─ src/layouts/    Main, authentication và admin layout
+├─ src/pages/      Public, user và admin pages
+├─ src/routes/     Protected route và role guard
+├─ src/services/   Typed HTTP services
+├─ src/types/      API và domain types
+└─ src/utils/      Error normalization và helper
 ```
 
 ## API endpoints
@@ -138,7 +158,7 @@ Copy-Item backend/.env.example backend/.env
 
 Điền giá trị local trong `backend/.env`. Không commit database password, JWT secret hoặc seed password.
 
-### Cài dependency và chạy
+### Cài dependency và chạy backend
 
 ```powershell
 npm install
@@ -149,6 +169,23 @@ npm run dev
 ```
 
 API local chạy tại `http://localhost:4000`.
+
+### Chạy frontend
+
+Mở terminal thứ hai sau khi backend đang chạy:
+
+```powershell
+Copy-Item frontend/.env.example frontend/.env
+npm run dev:client
+```
+
+Frontend local chạy tại `http://localhost:5173`. Vite proxy `/api` tới backend local nên browser gửi HTTP-only cookie theo cùng origin.
+
+Kiểm tra frontend trước khi commit:
+
+```powershell
+npm run verify:client
+```
 
 ## Bảo mật và production
 
