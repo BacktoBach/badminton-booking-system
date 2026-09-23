@@ -3,14 +3,20 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "backend"
+    "backend",
+    "frontend"
   ],
   "scripts": {
     "dev": "npm run dev --workspace backend",
     "dev:server": "npm run dev --workspace backend",
+    "dev:client": "npm run dev --workspace frontend",
     "build:server": "npm run build --workspace backend",
+    "build:client": "npm run build --workspace frontend",
     "typecheck:server": "npm run typecheck --workspace backend",
+    "typecheck:client": "npm run typecheck --workspace frontend",
     "test:server": "npm run test --workspace backend",
+    "test:client": "npm run test --workspace frontend",
+    "verify:client": "npm run typecheck:client && npm run test:client && npm run build:client",
     "test:coverage": "npm run test:coverage --workspace backend",
     "verify:server": "npm run typecheck:server && npm run test:coverage && npm run build:server && npm run db:check",
     "db:check": "npm run db:check --workspace backend",
@@ -20,5 +26,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "jsdom": "^29.0.0"
   }
 }

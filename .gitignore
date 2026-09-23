@@ -15,3 +15,7 @@ backend/docs/
 # Reserved local-only source documentation
 backend/src/docs/
 
+# Local frontend planning and Stitch design references
+frontend/docs/
+stitch_badminton_class_booking_system/
+

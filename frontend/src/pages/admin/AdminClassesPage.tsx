@@ -1,0 +1,16 @@
+import { Pencil, Plus, Trash2, Users } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { EmptyState, ErrorState, LoadingState } from '../../components/feedback/States'
+import { Pagination } from '../../components/ui/Pagination'
+import { useToast } from '../../contexts/ToastContext'
+import { useAdminClasses, useDeleteClass } from '../../hooks/classes/useClasses'
+import type { ClassLevel } from '../../types/class.types'
+import { getErrorMessage } from '../../utils/api-error'
+import { formatDate } from '../../components/classes/ClassCard'
+
+export function AdminClassesPage() {
+  const [params, setParams] = useSearchParams(); const page = Math.max(1, Number(params.get('page')) || 1); const level = (params.get('level') || undefined) as ClassLevel | undefined; const query = useAdminClasses({ page, limit: 9, level }); const remove = useDeleteClass(); const { showToast } = useToast()
+  const changePage = (value: number) => setParams((current) => { current.set('page', String(value)); return current })
+  const deleteClass = (id: string, title: string) => { if (!window.confirm(`Xóa lớp “${title}” và toàn bộ đăng ký liên quan?`)) return; remove.mutate(id, { onSuccess: () => showToast('Đã xóa lớp học.'), onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }) }) }
+  return <><div className="flex items-end justify-between"><div><p className="font-bold uppercase tracking-wider text-emerald-700">Admin workspace</p><h1 className="mt-2 text-3xl font-black">Quản lý lớp học</h1><p className="mt-2 text-slate-500">Tạo lịch mới, cập nhật sức chứa và theo dõi học viên.</p></div><Link to="/admin/classes/new" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-700 px-4 font-bold text-white"><Plus size={18} /> Tạo lớp mới</Link></div><div className="mt-8">{query.isPending ? <LoadingState /> : query.isError ? <ErrorState message={getErrorMessage(query.error)} /> : query.data.data.length === 0 ? <EmptyState /> : <div className="overflow-x-auto rounded-2xl border bg-white"><table className="w-full min-w-[800px] text-left"><thead className="border-b bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="p-4">Lớp học</th><th>Khai giảng</th><th>Trình độ</th><th>Học viên</th><th>Thao tác</th></tr></thead><tbody>{query.data.data.map((item) => <tr key={item.id} className="border-b last:border-0"><td className="p-4"><strong>{item.title}</strong><small className="block text-slate-500">{item.coachName} · {item.location}</small></td><td>{formatDate(item.startDate)}</td><td>{item.level}</td><td>{item.currentStudents}/{item.maxStudents}</td><td><div className="flex gap-2"><Link title="Học viên" className="rounded-lg border p-2" to={`/admin/classes/${item.id}/students`}><Users size={18} /></Link><Link title="Chỉnh sửa" className="rounded-lg border p-2" to={`/admin/classes/${item.id}/edit`}><Pencil size={18} /></Link><button title="Xóa" className="rounded-lg border p-2 text-rose-600" disabled={remove.isPending} onClick={() => deleteClass(item.id, item.title)}><Trash2 size={18} /></button></div></td></tr>)}</tbody></table></div>}{query.data && <Pagination page={query.data.meta.page} totalPages={query.data.meta.totalPages} onPageChange={changePage} />}</div></>
+}
