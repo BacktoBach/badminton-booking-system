@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -31,6 +33,7 @@
     "@vitejs/plugin-react": "latest",
     "jsdom": "^29.0.0",
     "msw": "latest",
+    "prettier": "^3.9.9",
     "tailwindcss": "latest",
     "typescript": "latest",
     "vite": "latest",

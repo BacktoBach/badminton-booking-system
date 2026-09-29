@@ -80,7 +80,8 @@ frontend/
 ├─ src/routes/     Protected route và role guard
 ├─ src/services/   Typed HTTP services
 ├─ src/types/      API và domain types
-└─ src/utils/      Error normalization và helper
+├─ src/utils/      Error normalization và helper
+└─ tests/          Unit, integration, MSW handlers và test helpers
 ```
 
 ## API endpoints

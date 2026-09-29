@@ -25,7 +25,14 @@ export type ClassListParams = {
 
 export type ClassWriteInput = Pick<
   BadmintonClass,
-  'title' | 'description' | 'coachName' | 'level' | 'startDate' | 'schedule' | 'location' | 'maxStudents'
+  | 'title'
+  | 'description'
+  | 'coachName'
+  | 'level'
+  | 'startDate'
+  | 'schedule'
+  | 'location'
+  | 'maxStudents'
 >
 
 export type Student = { id: string; name: string; email: string; enrolledAt: string }

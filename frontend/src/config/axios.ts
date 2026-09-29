@@ -9,7 +9,9 @@ export const apiClient = axios.create({
 })
 
 let unauthorizedHandler: (() => void) | undefined
-export const setUnauthorizedHandler = (handler?: () => void) => { unauthorizedHandler = handler }
+export const setUnauthorizedHandler = (handler?: () => void) => {
+  unauthorizedHandler = handler
+}
 
 apiClient.interceptors.response.use(
   (response) => response,

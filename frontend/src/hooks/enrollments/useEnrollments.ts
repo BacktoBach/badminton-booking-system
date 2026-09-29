@@ -9,19 +9,27 @@ export const enrollmentKeys = {
   mine: (params: MyEnrollmentParams) => ['enrollments', 'me', params] as const,
 }
 
-export const useMyEnrollments = (params: MyEnrollmentParams) => useQuery({
-  queryKey: enrollmentKeys.mine(params), queryFn: () => enrollmentService.mine(params), placeholderData: (previous) => previous,
-})
+export const useMyEnrollments = (params: MyEnrollmentParams) =>
+  useQuery({
+    queryKey: enrollmentKeys.mine(params),
+    queryFn: ({ signal }) => enrollmentService.mine(params, signal),
+    placeholderData: (previous) => previous,
+  })
 
-const refreshEnrollmentData = (classId: string) => Promise.all([
-  queryClient.invalidateQueries({ queryKey: classKeys.detail(classId) }),
-  queryClient.invalidateQueries({ queryKey: classKeys.lists() }),
-  queryClient.invalidateQueries({ queryKey: enrollmentKeys.all }),
-])
+const refreshEnrollmentData = (classId: string) =>
+  Promise.all([
+    queryClient.invalidateQueries({ queryKey: classKeys.detail(classId) }),
+    queryClient.invalidateQueries({ queryKey: classKeys.lists() }),
+    queryClient.invalidateQueries({ queryKey: enrollmentKeys.all }),
+  ])
 
-export const useEnroll = (classId: string) => useMutation({
-  mutationFn: () => enrollmentService.enroll(classId), onSuccess: () => refreshEnrollmentData(classId),
-})
-export const useCancelEnrollment = (classId: string) => useMutation({
-  mutationFn: () => enrollmentService.cancel(classId), onSuccess: () => refreshEnrollmentData(classId),
-})
+export const useEnroll = (classId: string) =>
+  useMutation({
+    mutationFn: () => enrollmentService.enroll(classId),
+    onSuccess: () => refreshEnrollmentData(classId),
+  })
+export const useCancelEnrollment = (classId: string) =>
+  useMutation({
+    mutationFn: () => enrollmentService.cancel(classId),
+    onSuccess: () => refreshEnrollmentData(classId),
+  })
