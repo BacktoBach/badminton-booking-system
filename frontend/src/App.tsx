@@ -2,20 +2,43 @@ import { useEffect } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import { AppErrorBoundary } from './components/feedback/AppErrorBoundary'
+import { SessionLifecycle } from './components/auth/SessionLifecycle'
 import { setUnauthorizedHandler } from './config/axios'
 import { queryClient } from './config/query-client'
-import { authKeys } from './hooks/auth/useAuth'
+import { authKeys, clearAuthSession } from './config/auth-cache'
+import { publishAuthSessionEvent, subscribeToAuthSessionEvents } from './utils/auth-session-events'
 import { ToastProvider } from './contexts/ToastContext'
 import { AppRoutes } from './routes/AppRoutes'
 
 export default function App() {
   useEffect(() => {
     setUnauthorizedHandler(() => {
-      queryClient.removeQueries({ queryKey: authKeys.me(), exact: true })
-      queryClient.removeQueries({ queryKey: ['enrollments'] })
+      clearAuthSession()
+      publishAuthSessionEvent('expired')
     })
-    return () => setUnauthorizedHandler()
+    const unsubscribe = subscribeToAuthSessionEvents((event) => {
+      if (event.type === 'login') {
+        void queryClient.invalidateQueries({ queryKey: authKeys.me(), exact: true })
+        return
+      }
+      clearAuthSession()
+    })
+    return () => {
+      unsubscribe()
+      setUnauthorizedHandler()
+    }
   }, [])
 
-  return <AppErrorBoundary><QueryClientProvider client={queryClient}><ToastProvider><BrowserRouter><AppRoutes /></BrowserRouter></ToastProvider></QueryClientProvider></AppErrorBoundary>
+  return (
+    <AppErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <SessionLifecycle />
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </ToastProvider>
+      </QueryClientProvider>
+    </AppErrorBoundary>
+  )
 }
