@@ -1,17 +1,95 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { KeyRound, Mail, UserRound } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
-import { InputField } from '../../components/ui/FormField'
+import { AuthInput } from '../../components/auth/AuthInput'
 import { useToast } from '../../contexts/ToastContext'
 import { useRegister } from '../../hooks/auth/useAuth'
 import { registerSchema } from '../../schemas/auth.schema'
 import type { RegisterInput } from '../../types/auth.types'
-import { getErrorMessage } from '../../utils/api-error'
+import { applyApiFieldErrors } from '../../utils/form-error'
 
 export function RegisterPage() {
-  const { register, handleSubmit, formState: { errors } } = useForm<RegisterInput>({ resolver: zodResolver(registerSchema), defaultValues: { name: '', email: '', password: '' } })
-  const mutation = useRegister(); const navigate = useNavigate(); const { showToast } = useToast()
-  const submit = (input: RegisterInput) => mutation.mutate(input, { onSuccess: () => { showToast('Đăng ký thành công. Hãy đăng nhập.'); navigate('/login') }, onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }) })
-  return <><h1 className="text-2xl font-black">Tạo tài khoản học viên</h1><p className="mt-1 text-sm text-slate-500">Role luôn là user; không thể đăng ký tài khoản admin.</p><form className="mt-6 space-y-5" onSubmit={handleSubmit(submit)}><InputField label="Họ tên" fieldId="name" error={errors.name?.message} {...register('name')} /><InputField label="Email" fieldId="email" type="email" error={errors.email?.message} {...register('email')} /><InputField label="Mật khẩu" fieldId="password" type="password" error={errors.password?.message} {...register('password')} /><Button className="w-full" disabled={mutation.isPending}>Đăng ký</Button></form><p className="mt-6 text-center text-sm">Đã có tài khoản? <Link className="font-bold text-emerald-700" to="/login">Đăng nhập</Link></p></>
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<RegisterInput>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { name: '', email: '', password: '' },
+  })
+  const mutation = useRegister()
+  const navigate = useNavigate()
+  const { showToast } = useToast()
+  const submit = (input: RegisterInput) =>
+    mutation.mutate(input, {
+      onSuccess: () => {
+        showToast('Đăng ký thành công. Hãy đăng nhập.')
+        navigate('/login')
+      },
+      onError: (error) => {
+        const apiError = applyApiFieldErrors(error, setError, ['name', 'email', 'password'])
+        showToast({ type: 'error', message: apiError.message })
+      },
+    })
+  return (
+    <>
+      <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase text-emerald-800">
+        <span className="size-1.5 rounded-full bg-emerald-700" /> Khởi đầu đam mê
+      </div>
+      <h1 className="font-serif text-3xl font-bold tracking-normal text-slate-900">
+        Tạo tài khoản học viên
+      </h1>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        Tạo tài khoản để tìm kiếm và đăng ký lớp học phù hợp.
+      </p>
+      <form className="mt-6 space-y-4" onSubmit={handleSubmit(submit)}>
+        <AuthInput
+          label="Họ tên học viên"
+          fieldId="name"
+          icon={UserRound}
+          autoComplete="name"
+          maxLength={100}
+          placeholder="Nguyễn Văn A"
+          error={errors.name?.message}
+          {...register('name')}
+        />
+        <AuthInput
+          label="Email đăng ký"
+          fieldId="email"
+          icon={Mail}
+          type="email"
+          autoComplete="email"
+          maxLength={255}
+          placeholder="name@example.com"
+          error={errors.email?.message}
+          {...register('email')}
+        />
+        <AuthInput
+          label="Mật khẩu"
+          fieldId="password"
+          icon={KeyRound}
+          type="password"
+          autoComplete="new-password"
+          placeholder="Tối thiểu 8 ký tự"
+          error={errors.password?.message}
+          {...register('password')}
+        />
+        <Button className="w-full rounded-lg bg-emerald-700 py-3" disabled={mutation.isPending}>
+          {mutation.isPending ? 'Đang tạo tài khoản…' : 'Tạo tài khoản học viên'}
+        </Button>
+      </form>
+      <p className="mt-5 text-center text-sm text-slate-600">
+        Đã có tài khoản?{' '}
+        <Link
+          className="font-bold text-emerald-800 underline decoration-emerald-300 underline-offset-4"
+          to="/login"
+        >
+          Đăng nhập
+        </Link>
+      </p>
+    </>
+  )
 }
