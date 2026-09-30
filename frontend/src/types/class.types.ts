@@ -14,6 +14,7 @@ export type BadmintonClass = {
   maxStudents: number
   availableSlots: number
   isFull: boolean
+  isEnrolled?: boolean
 }
 
 export type ClassListParams = {

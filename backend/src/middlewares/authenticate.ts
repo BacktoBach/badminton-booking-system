@@ -1,4 +1,4 @@
-import type { RequestHandler } from "express";
+import type { Request, RequestHandler } from "express";
 import jwt from "jsonwebtoken";
 import { getAuthCookieName } from "../config/auth-cookie.js";
 import { pool } from "../database/pool.js";
@@ -7,10 +7,10 @@ import { findUserById } from "../models/user.model.js";
 import { verifyAccessToken } from "../utils/jwt.js";
 import { toPublicUser } from "../utils/user-serializer.js";
 
-export const authenticate: RequestHandler = async (request, _response, next) => {
+const resolveAuthenticatedUser = async (request: Request, required: boolean): Promise<void> => {
   const token = request.cookies?.[getAuthCookieName()] as string | undefined;
   if (!token) {
-    next(new AppError(401, "AUTH_REQUIRED", "Authentication is required"));
+    if (required) throw new AppError(401, "AUTH_REQUIRED", "Authentication is required");
     return;
   }
 
@@ -18,26 +18,38 @@ export const authenticate: RequestHandler = async (request, _response, next) => 
   try {
     payload = verifyAccessToken(token);
   } catch (error) {
-    next(
-      new AppError(
+    if (required) {
+      throw new AppError(
         401,
         "INVALID_TOKEN",
         error instanceof jwt.TokenExpiredError ? "Session has expired" : "Session token is invalid",
-      ),
-    );
+      );
+    }
     return;
   }
 
   const user = await findUserById(pool, payload.sub);
   if (!user) {
-    next(new AppError(401, "INVALID_TOKEN", "The token user no longer exists"));
+    if (required) throw new AppError(401, "INVALID_TOKEN", "The token user no longer exists");
     return;
   }
   if (payload.tokenVersion !== user.token_version) {
-    next(new AppError(401, "TOKEN_REVOKED", "Session has been revoked; please sign in again"));
+    if (required) {
+      throw new AppError(401, "TOKEN_REVOKED", "Session has been revoked; please sign in again");
+    }
     return;
   }
+
   request.auth = payload;
   request.user = { ...toPublicUser(user), tokenVersion: user.token_version };
+};
+
+export const optionalAuthenticate: RequestHandler = async (request, _response, next) => {
+  await resolveAuthenticatedUser(request, false);
+  next();
+};
+
+export const authenticate: RequestHandler = async (request, _response, next) => {
+  await resolveAuthenticatedUser(request, true);
   next();
 };

@@ -9,10 +9,12 @@ export const authKeys = {
 }
 
 export const setAuthSession = (session: AuthSession) => {
+  queryClient.removeQueries({ queryKey: ['classes', 'detail'] })
   queryClient.setQueryData<AuthSessionCache>(authKeys.me(), session)
 }
 
 export const clearAuthSession = () => {
   queryClient.setQueryData<AuthSessionCache>(authKeys.me(), null)
+  queryClient.removeQueries({ queryKey: ['classes', 'detail'] })
   queryClient.removeQueries({ queryKey: ['enrollments'] })
 }

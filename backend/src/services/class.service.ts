@@ -26,34 +26,29 @@ import { toPublicClass } from "../utils/class-serializer.js";
 export const getUpcomingClasses = async (query: ClassListQuery) => {
   const result = await listUpcomingClasses(pool, query);
   return {
-    classes: result.rows.map(toPublicClass),
+    classes: result.rows.map((record) => toPublicClass(record)),
     meta: createPaginationMeta(query.page, query.limit, result.total),
   };
 };
 
-export const getPublicClass = async (classId: string): Promise<PublicClass> => {
-  const record = await findPublicClassById(pool, classId);
+export const getPublicClass = async (classId: string, userId?: string): Promise<PublicClass> => {
+  const record = await findPublicClassById(pool, classId, userId);
   if (!record) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
-  return toPublicClass(record);
+  return toPublicClass(record, record.is_enrolled ?? false);
 };
 
 export const getAdminClasses = async (query: ClassListQuery) => {
   const result = await listAdminClasses(pool, query);
   return {
-    classes: result.rows.map(toPublicClass),
+    classes: result.rows.map((record) => toPublicClass(record)),
     meta: createPaginationMeta(query.page, query.limit, result.total),
   };
 };
 
-export const createAdminClass = async (
-  input: CreateClassInput,
-  adminId: string,
-): Promise<PublicClass> => toPublicClass(await createClass(pool, { ...input, createdById: adminId }));
+export const createAdminClass = async (input: CreateClassInput, adminId: string): Promise<PublicClass> =>
+  toPublicClass(await createClass(pool, { ...input, createdById: adminId }));
 
-export const updateAdminClass = async (
-  classId: string,
-  input: UpdateClassInput,
-): Promise<PublicClass> => {
+export const updateAdminClass = async (classId: string, input: UpdateClassInput): Promise<PublicClass> => {
   try {
     return await withTransaction(async (client) => {
       if (input.startDate !== undefined) {

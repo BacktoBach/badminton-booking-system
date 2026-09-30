@@ -10,6 +10,7 @@ import {
   resetTestDatabase,
   truncateTestData,
 } from "../helpers/test-database.js";
+import { createTestAuthCookie } from "../helpers/auth-cookie.js";
 
 const insertUser = async (database: Pool, email: string): Promise<string> => {
   const result = await database.query<{ id: string }>(
@@ -45,10 +46,7 @@ const insertClass = async (
 };
 
 const enroll = async (database: Pool, classId: string, userId: string): Promise<void> => {
-  await database.query(
-    "INSERT INTO enrollments (class_id, user_id) VALUES ($1, $2)",
-    [classId, userId],
-  );
+  await database.query("INSERT INTO enrollments (class_id, user_id) VALUES ($1, $2)", [classId, userId]);
 };
 
 describe("public classes API", () => {
@@ -62,7 +60,10 @@ describe("public classes API", () => {
       client.release();
     }
     await resetTestDatabase(pool);
-    await runMigrations({ connectionString: getTestDatabaseUrl(), log: () => undefined });
+    await runMigrations({
+      connectionString: getTestDatabaseUrl(),
+      log: () => undefined,
+    });
   });
 
   beforeEach(async () => {
@@ -81,15 +82,28 @@ describe("public classes API", () => {
       startsInHours: 12,
       maxStudents: 1,
     });
-    await insertClass(pool, { ownerId, title: "Advanced Smash", startsInHours: 36 });
-    await insertClass(pool, { ownerId, title: "Past Training", startsInHours: -12 });
+    await insertClass(pool, {
+      ownerId,
+      title: "Advanced Smash",
+      startsInHours: 36,
+    });
+    await insertClass(pool, {
+      ownerId,
+      title: "Past Training",
+      startsInHours: -12,
+    });
     const studentId = await insertUser(pool, "student@example.com");
     await enroll(pool, firstId, studentId);
 
     const response = await request(app).get("/api/classes");
 
     expect(response.status).toBe(200);
-    expect(response.body.meta).toEqual({ page: 1, limit: 9, totalItems: 2, totalPages: 1 });
+    expect(response.body.meta).toEqual({
+      page: 1,
+      limit: 9,
+      totalItems: 2,
+      totalPages: 1,
+    });
     expect(response.body.data.map((item: { title: string }) => item.title)).toEqual([
       "Beginner Footwork",
       "Advanced Smash",
@@ -104,8 +118,16 @@ describe("public classes API", () => {
   });
 
   it("applies search and level filters before pagination", async () => {
-    await insertClass(pool, { ownerId, title: "Academy Basics One", startsInHours: 12 });
-    await insertClass(pool, { ownerId, title: "Academy Basics Two", startsInHours: 24 });
+    await insertClass(pool, {
+      ownerId,
+      title: "Academy Basics One",
+      startsInHours: 12,
+    });
+    await insertClass(pool, {
+      ownerId,
+      title: "Academy Basics Two",
+      startsInHours: 24,
+    });
     await insertClass(pool, {
       ownerId,
       title: "Academy Advanced",
@@ -113,12 +135,15 @@ describe("public classes API", () => {
       startsInHours: 36,
     });
 
-    const response = await request(app).get(
-      "/api/classes?search=academy&level=beginner&page=2&limit=1",
-    );
+    const response = await request(app).get("/api/classes?search=academy&level=beginner&page=2&limit=1");
 
     expect(response.status).toBe(200);
-    expect(response.body.meta).toEqual({ page: 2, limit: 1, totalItems: 2, totalPages: 2 });
+    expect(response.body.meta).toEqual({
+      page: 2,
+      limit: 1,
+      totalItems: 2,
+      totalPages: 2,
+    });
     expect(response.body.data).toHaveLength(1);
     expect(response.body.data[0].title).toBe("Academy Basics Two");
   });
@@ -141,7 +166,12 @@ describe("public classes API", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.data).toEqual([]);
-    expect(response.body.meta).toEqual({ page: 3, limit: 1, totalItems: 1, totalPages: 1 });
+    expect(response.body.meta).toEqual({
+      page: 3,
+      limit: 1,
+      totalItems: 1,
+      totalPages: 1,
+    });
   });
 
   it.each([
@@ -176,7 +206,14 @@ describe("public classes API", () => {
       maxStudents: 3,
       availableSlots: 2,
       isFull: false,
+      isEnrolled: false,
     });
+
+    const enrolledDetail = await request(app)
+      .get(`/api/classes/${classId}`)
+      .set("Cookie", createTestAuthCookie(studentId));
+    expect(enrolledDetail.status).toBe(200);
+    expect(enrolledDetail.body.data.isEnrolled).toBe(true);
 
     const missing = await request(app).get("/api/classes/00000000-0000-4000-8000-000000000000");
     expect(missing.status).toBe(404);

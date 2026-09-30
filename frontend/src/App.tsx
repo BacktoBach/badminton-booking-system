@@ -18,6 +18,7 @@ export default function App() {
     })
     const unsubscribe = subscribeToAuthSessionEvents((event) => {
       if (event.type === 'login') {
+        queryClient.removeQueries({ queryKey: ['classes', 'detail'] })
         void queryClient.invalidateQueries({ queryKey: authKeys.me(), exact: true })
         return
       }

@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/Button'
 import { useToast } from '../../contexts/ToastContext'
 import { useCurrentUser } from '../../hooks/auth/useAuth'
 import { useClassDetail } from '../../hooks/classes/useClasses'
-import { useEnroll } from '../../hooks/enrollments/useEnrollments'
+import { useCancelEnrollment, useEnroll } from '../../hooks/enrollments/useEnrollments'
 import { getErrorMessage } from '../../utils/api-error'
 import { formatDateTime, hasStarted } from '../../utils/date'
 
@@ -14,6 +14,7 @@ export function ClassDetailPage() {
   const query = useClassDetail(classId)
   const auth = useCurrentUser()
   const enroll = useEnroll(classId)
+  const cancel = useCancelEnrollment(classId)
   const { showToast } = useToast()
   const navigate = useNavigate()
   if (query.isPending)
@@ -30,7 +31,8 @@ export function ClassDetailPage() {
     )
   const item = query.data
   const started = hasStarted(item.startDate)
-  const canEnroll = auth.data?.user.role === 'user' && !item.isFull && !started
+  const isUser = auth.data?.user.role === 'user'
+  const canEnroll = isUser && !item.isEnrolled && !item.isFull && !started
   const handleEnroll = () => {
     if (!auth.data) {
       navigate('/login', { state: { from: `/classes/${classId}` } })
@@ -38,6 +40,13 @@ export function ClassDetailPage() {
     }
     enroll.mutate(undefined, {
       onSuccess: () => showToast('Bạn đã đăng ký lớp học.'),
+      onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }),
+    })
+  }
+  const handleCancel = () => {
+    if (!window.confirm(`Hủy đăng ký lớp “${item.title}”?`)) return
+    cancel.mutate(undefined, {
+      onSuccess: () => showToast('Đã hủy đăng ký lớp.'),
       onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }),
     })
   }
@@ -101,13 +110,26 @@ export function ClassDetailPage() {
             <Link className="mt-5 block text-center font-bold text-emerald-700" to="/admin/classes">
               Quản lý lớp
             </Link>
+          ) : item.isEnrolled && isUser ? (
+            <Button
+              className="mt-5 w-full"
+              variant="secondary"
+              disabled={started || cancel.isPending}
+              onClick={handleCancel}
+            >
+              {cancel.isPending ? 'Đang hủy…' : started ? 'Lớp đã bắt đầu' : 'Hủy đăng ký'}
+            </Button>
           ) : (
             <Button
               className="mt-5 w-full"
               disabled={(Boolean(auth.data) && !canEnroll) || enroll.isPending}
               onClick={handleEnroll}
             >
-              {auth.data ? 'Đăng ký lớp học' : 'Đăng nhập để đăng ký'}
+              {enroll.isPending
+                ? 'Đang đăng ký…'
+                : auth.data
+                  ? 'Đăng ký lớp học'
+                  : 'Đăng nhập để đăng ký'}
             </Button>
           )}
         </div>

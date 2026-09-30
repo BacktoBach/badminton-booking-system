@@ -1,10 +1,5 @@
 import type { Request, Response } from "express";
-import type {
-  ClassListQuery,
-  CreateClassInput,
-  StudentListQuery,
-  UpdateClassInput,
-} from "../types/class.js";
+import type { ClassListQuery, CreateClassInput, StudentListQuery, UpdateClassInput } from "../types/class.js";
 import {
   createAdminClass,
   deleteAdminClass,
@@ -22,7 +17,7 @@ export const listClasses = async (request: Request, response: Response): Promise
 
 export const getClassDetail = async (request: Request, response: Response): Promise<void> => {
   const { classId } = request.validated?.params as { classId: string };
-  const classRecord = await getPublicClass(classId);
+  const classRecord = await getPublicClass(classId, request.user?.id);
   response.status(200).json({ data: classRecord });
 };
 
@@ -50,9 +45,6 @@ export const removeClass = async (request: Request, response: Response): Promise
 
 export const listClassStudents = async (request: Request, response: Response): Promise<void> => {
   const { classId } = request.validated?.params as { classId: string };
-  const result = await getClassStudents(
-    classId,
-    request.validated?.query as StudentListQuery,
-  );
+  const result = await getClassStudents(classId, request.validated?.query as StudentListQuery);
   response.status(200).json({ data: result.students, meta: result.meta });
 };
