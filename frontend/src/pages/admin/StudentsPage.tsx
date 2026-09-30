@@ -5,13 +5,13 @@ import { useClassStudents } from '../../hooks/classes/useClasses'
 import { usePaginationBounds } from '../../hooks/usePaginationBounds'
 import { getErrorMessage } from '../../utils/api-error'
 import { formatDateTime } from '../../utils/date'
-import { readPositivePage } from '../../utils/search-params'
+import { readPositivePage, readSearch, SEARCH_MAX_LENGTH } from '../../utils/search-params'
 
 export function StudentsPage() {
   const { classId = '' } = useParams()
   const [params, setParams] = useSearchParams()
   const page = readPositivePage(params.get('page'))
-  const search = params.get('search') ?? ''
+  const search = readSearch(params.get('search'))
   const query = useClassStudents(classId, { page, limit: 20, search: search || undefined })
   usePaginationBounds(page, query.data?.meta.totalPages, (lastPage) =>
     setParams((current) => {
@@ -26,14 +26,16 @@ export function StudentsPage() {
         className="mt-6"
         onSubmit={(event) => {
           event.preventDefault()
-          const value = new FormData(event.currentTarget).get('search')?.toString().trim() ?? ''
+          const value = readSearch(
+            new FormData(event.currentTarget).get('search')?.toString() ?? null,
+          )
           setParams(value ? { search: value, page: '1' } : { page: '1' })
         }}
       >
         <input
           key={search}
           name="search"
-          maxLength={100}
+          maxLength={SEARCH_MAX_LENGTH}
           defaultValue={search}
           className="w-full max-w-lg rounded-xl border bg-white px-4 py-3"
           placeholder="Tìm theo tên hoặc email rồi nhấn Enter..."

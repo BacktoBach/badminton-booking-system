@@ -3,6 +3,7 @@ import {
   readClassLevel,
   readEnrollmentStatus,
   readPositivePage,
+  readSearch,
 } from '../../../src/utils/search-params'
 
 describe('search param readers', () => {
@@ -18,5 +19,11 @@ describe('search param readers', () => {
     expect(readClassLevel('expert')).toBeUndefined()
     expect(readEnrollmentStatus('past')).toBe('past')
     expect(readEnrollmentStatus('invalid')).toBe('upcoming')
+  })
+
+  it('normalizes and limits search values from the URL', () => {
+    expect(readSearch(null)).toBe('')
+    expect(readSearch('  lớp nâng cao  ')).toBe('lớp nâng cao')
+    expect(readSearch('a'.repeat(101))).toBe('a'.repeat(100))
   })
 })
