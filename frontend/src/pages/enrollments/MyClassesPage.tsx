@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button'
 import { Pagination } from '../../components/ui/Pagination'
 import { useToast } from '../../contexts/ToastContext'
 import { useCancelEnrollment, useMyEnrollments } from '../../hooks/enrollments/useEnrollments'
+import { usePaginationBounds } from '../../hooks/usePaginationBounds'
 import { getErrorMessage } from '../../utils/api-error'
 import { hasStarted } from '../../utils/date'
 import { readEnrollmentStatus, readPositivePage } from '../../utils/search-params'
@@ -48,6 +49,9 @@ export function MyClassesPage() {
       if (key === 'status') current.set('page', '1')
       return current
     })
+  usePaginationBounds(page, query.data?.meta.totalPages, (lastPage) =>
+    update('page', String(lastPage)),
+  )
   return (
     <section className="mx-auto max-w-7xl px-4 py-12">
       <h1 className="text-3xl font-black">Lớp của tôi</h1>

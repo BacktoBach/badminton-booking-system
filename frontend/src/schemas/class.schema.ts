@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { parseBusinessDateTimeInput } from '../utils/date'
 
 const classBaseFormSchema = z.object({
   title: z.string().trim().min(3, 'Tên lớp cần ít nhất 3 ký tự').max(150),
@@ -8,14 +9,14 @@ const classBaseFormSchema = z.object({
   startDate: z
     .string()
     .min(1, 'Vui lòng chọn ngày khai giảng')
-    .refine((value) => !Number.isNaN(new Date(value).getTime()), 'Ngày khai giảng không hợp lệ'),
+    .refine((value) => parseBusinessDateTimeInput(value) !== null, 'Ngày khai giảng không hợp lệ'),
   schedule: z.string().trim().min(3).max(255),
   location: z.string().trim().min(3).max(255),
   maxStudents: z.number().int().min(1).max(500),
 })
 
 export const classFormSchema = classBaseFormSchema.refine(
-  (value) => new Date(value.startDate).getTime() > Date.now(),
+  (value) => (parseBusinessDateTimeInput(value.startDate)?.getTime() ?? 0) > Date.now(),
   { path: ['startDate'], message: 'Ngày khai giảng phải ở tương lai' },
 )
 

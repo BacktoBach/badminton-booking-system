@@ -4,6 +4,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/feedback/
 import { Pagination } from '../../components/ui/Pagination'
 import { useToast } from '../../contexts/ToastContext'
 import { useAdminClasses, useDeleteClass } from '../../hooks/classes/useClasses'
+import { usePaginationBounds } from '../../hooks/usePaginationBounds'
 import { getErrorMessage } from '../../utils/api-error'
 import { formatDateTime } from '../../utils/date'
 import { readClassLevel, readPositivePage } from '../../utils/search-params'
@@ -26,6 +27,9 @@ export function AdminClassesPage() {
       return current
     })
   }
+  usePaginationBounds(page, query.data?.meta.totalPages, (lastPage) =>
+    updateParams({ page: String(lastPage) }, false),
+  )
 
   const deleteClass = (id: string, title: string) => {
     if (!window.confirm(`Xóa lớp “${title}” và toàn bộ đăng ký liên quan?`)) return

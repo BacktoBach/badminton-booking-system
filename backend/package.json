@@ -16,7 +16,7 @@
     "db:seed": "tsx scripts/seed.ts"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12.0"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -301,7 +301,7 @@ Page
 
 ## 12. Yêu cầu phi chức năng
 
-- Node.js phiên bản 20 trở lên.
+- Node.js phiên bản 22.12 trở lên.
 - Mã nguồn sử dụng TypeScript và vượt qua typecheck trước khi merge.
 - Backend hỗ trợ PostgreSQL với migration có thể chạy lặp an toàn theo cơ chế migration của dự án.
 - API public có pagination để tránh trả tập dữ liệu không giới hạn.

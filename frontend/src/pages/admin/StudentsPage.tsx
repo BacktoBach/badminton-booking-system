@@ -2,6 +2,7 @@ import { useSearchParams, useParams } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/feedback/States'
 import { Pagination } from '../../components/ui/Pagination'
 import { useClassStudents } from '../../hooks/classes/useClasses'
+import { usePaginationBounds } from '../../hooks/usePaginationBounds'
 import { getErrorMessage } from '../../utils/api-error'
 import { formatDateTime } from '../../utils/date'
 import { readPositivePage } from '../../utils/search-params'
@@ -12,6 +13,12 @@ export function StudentsPage() {
   const page = readPositivePage(params.get('page'))
   const search = params.get('search') ?? ''
   const query = useClassStudents(classId, { page, limit: 20, search: search || undefined })
+  usePaginationBounds(page, query.data?.meta.totalPages, (lastPage) =>
+    setParams((current) => {
+      current.set('page', String(lastPage))
+      return current
+    }),
+  )
   return (
     <>
       <h1 className="text-3xl font-black">Danh sách học viên</h1>
