@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { apiClient } from '../config/axios'
 import type { DataResponse } from '../types/api.types'
 import type {
@@ -19,8 +20,16 @@ export const authService = {
   async logout() {
     await apiClient.post('/auth/logout')
   },
-  async me(signal?: AbortSignal) {
-    return (await apiClient.get<DataResponse<AuthSession>>('/auth/me', { signal })).data.data
+  async me(signal?: AbortSignal): Promise<AuthSession | null> {
+    try {
+      return (await apiClient.get<DataResponse<AuthSession>>('/auth/me', { signal })).data.data
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        return null
+      }
+
+      throw error
+    }
   },
   async changePassword(input: ChangePasswordInput) {
     await apiClient.put('/auth/change-password', input)
