@@ -56,10 +56,7 @@ export const listUpcomingClasses = async (
       `,
       [...filter.values, query.limit, offset],
     ),
-    database.query<CountRow>(
-      `SELECT COUNT(*)::INTEGER AS total FROM classes c WHERE ${filter.where}`,
-      filter.values,
-    ),
+    database.query<CountRow>(`SELECT COUNT(*)::INTEGER AS total FROM classes c WHERE ${filter.where}`, filter.values),
   ]);
 
   return { rows: classesResult.rows, total: countResult.rows[0]?.total ?? 0 };
@@ -68,6 +65,7 @@ export const listUpcomingClasses = async (
 export const findPublicClassById = async (
   database: DatabaseClient,
   classId: string,
+  userId?: string,
 ): Promise<ClassWithCountRow | null> => {
   const result = await database.query<ClassWithCountRow>(
     `
@@ -75,13 +73,19 @@ export const findPublicClassById = async (
         c.id, c.title, c.description, c.coach_name, c.level, c.start_date,
         c.schedule, c.location, c.max_students, c.created_by_id,
         c.created_at, c.updated_at,
-        COUNT(e.user_id)::INTEGER AS current_students
+        COUNT(e.user_id)::INTEGER AS current_students,
+        EXISTS (
+          SELECT 1
+          FROM enrollments viewer_enrollment
+          WHERE viewer_enrollment.class_id = c.id
+            AND viewer_enrollment.user_id = $2::UUID
+        ) AS is_enrolled
       FROM classes c
       LEFT JOIN enrollments e ON e.class_id = c.id
       WHERE c.id = $1
       GROUP BY c.id
     `,
-    [classId],
+    [classId, userId ?? null],
   );
   return result.rows[0] ?? null;
 };
@@ -131,8 +135,17 @@ export const createClass = async (
        (title, description, coach_name, level, start_date, schedule, location, max_students, created_by_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *, 0::INTEGER AS current_students`,
-    [input.title, input.description, input.coachName, input.level, input.startDate,
-      input.schedule, input.location, input.maxStudents, input.createdById],
+    [
+      input.title,
+      input.description,
+      input.coachName,
+      input.level,
+      input.startDate,
+      input.schedule,
+      input.location,
+      input.maxStudents,
+      input.createdById,
+    ],
   );
   const classRecord = result.rows[0];
   if (!classRecord) throw new Error("Class insert returned no row");
@@ -143,10 +156,9 @@ export const findClassStartDateForUpdate = async (
   database: DatabaseClient,
   classId: string,
 ): Promise<ClassStartDateRow | null> => {
-  const result = await database.query<ClassStartDateRow>(
-    "SELECT start_date FROM classes WHERE id = $1 FOR UPDATE",
-    [classId],
-  );
+  const result = await database.query<ClassStartDateRow>("SELECT start_date FROM classes WHERE id = $1 FOR UPDATE", [
+    classId,
+  ]);
   return result.rows[0] ?? null;
 };
 

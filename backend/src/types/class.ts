@@ -23,6 +23,7 @@ export type ClassWithCountRow = {
   created_at: Date;
   updated_at: Date;
   current_students: number;
+  is_enrolled?: boolean;
 };
 
 export type PublicClass = {
@@ -38,6 +39,7 @@ export type PublicClass = {
   maxStudents: number;
   availableSlots: number;
   isFull: boolean;
+  isEnrolled?: boolean;
 };
 
 export type CreateClassInput = {

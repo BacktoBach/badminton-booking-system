@@ -61,7 +61,10 @@ export const components = {
   },
   schemas: {
     UserRole: { type: "string", enum: ["admin", "user"] },
-    ClassLevel: { type: "string", enum: ["beginner", "intermediate", "advanced"] },
+    ClassLevel: {
+      type: "string",
+      enum: ["beginner", "intermediate", "advanced"],
+    },
     User: {
       type: "object",
       required: ["id", "name", "email", "role"],
@@ -82,9 +85,24 @@ export const components = {
       additionalProperties: false,
       required: ["name", "email", "password"],
       properties: {
-        name: { type: "string", minLength: 2, maxLength: 100, example: "Nguyen Van An" },
-        email: { type: "string", format: "email", maxLength: 255, example: "user@example.com" },
-        password: { type: "string", format: "password", minLength: 8, example: "ExamplePass123!" },
+        name: {
+          type: "string",
+          minLength: 2,
+          maxLength: 100,
+          example: "Nguyen Van An",
+        },
+        email: {
+          type: "string",
+          format: "email",
+          maxLength: 255,
+          example: "user@example.com",
+        },
+        password: {
+          type: "string",
+          format: "password",
+          minLength: 8,
+          example: "ExamplePass123!",
+        },
       },
     },
     LoginRequest: {
@@ -93,7 +111,11 @@ export const components = {
       required: ["email", "password"],
       properties: {
         email: { type: "string", format: "email", example: "user@example.com" },
-        password: { type: "string", format: "password", example: "ExamplePass123!" },
+        password: {
+          type: "string",
+          format: "password",
+          example: "ExamplePass123!",
+        },
         remember: { type: "boolean", default: false },
       },
     },
@@ -109,8 +131,18 @@ export const components = {
     Class: {
       type: "object",
       required: [
-        "id", "title", "description", "coachName", "level", "startDate", "schedule",
-        "location", "currentStudents", "maxStudents", "availableSlots", "isFull",
+        "id",
+        "title",
+        "description",
+        "coachName",
+        "level",
+        "startDate",
+        "schedule",
+        "location",
+        "currentStudents",
+        "maxStudents",
+        "availableSlots",
+        "isFull",
       ],
       properties: {
         id: { type: "string", format: "uuid" },
@@ -129,6 +161,11 @@ export const components = {
         maxStudents: { type: "integer", minimum: 1, maximum: 500, example: 12 },
         availableSlots: { type: "integer", minimum: 0, example: 9 },
         isFull: { type: "boolean", example: false },
+        isEnrolled: {
+          type: "boolean",
+          description: "Present on class detail responses; true when the authenticated user is enrolled.",
+          example: false,
+        },
       },
     },
     EnrolledClass: {
@@ -154,10 +191,7 @@ export const components = {
     ClassWriteRequest: {
       type: "object",
       additionalProperties: false,
-      required: [
-        "title", "description", "coachName", "level", "startDate", "schedule", "location",
-        "maxStudents",
-      ],
+      required: ["title", "description", "coachName", "level", "startDate", "schedule", "location", "maxStudents"],
       properties: {
         title: { type: "string", minLength: 3, maxLength: 150 },
         description: {
@@ -231,7 +265,10 @@ export const components = {
             message: { type: "string", example: "Class was not found" },
             details: {
               type: "object",
-              additionalProperties: { type: "array", items: { type: "string" } },
+              additionalProperties: {
+                type: "array",
+                items: { type: "string" },
+              },
             },
           },
         },
@@ -241,33 +278,57 @@ export const components = {
   responses: {
     ValidationError: {
       description: "Request validation failed",
-      content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" }, examples: {
-        invalidRequest: errorExample("VALIDATION_ERROR", "Request body is invalid"),
-      } } },
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/ApiError" },
+          examples: {
+            invalidRequest: errorExample("VALIDATION_ERROR", "Request body is invalid"),
+          },
+        },
+      },
     },
     AuthRequired: {
       description: "Authentication cookie is missing or invalid",
-      content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" }, examples: {
-        missing: errorExample("AUTH_REQUIRED", "Authentication is required"),
-        expired: errorExample("INVALID_TOKEN", "Session has expired"),
-        revoked: errorExample("TOKEN_REVOKED", "Session has been revoked; please sign in again"),
-      } } },
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/ApiError" },
+          examples: {
+            missing: errorExample("AUTH_REQUIRED", "Authentication is required"),
+            expired: errorExample("INVALID_TOKEN", "Session has expired"),
+            revoked: errorExample("TOKEN_REVOKED", "Session has been revoked; please sign in again"),
+          },
+        },
+      },
     },
     Forbidden: {
       description: "The authenticated user does not have the required role",
-      content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" }, examples: {
-        forbidden: errorExample("FORBIDDEN", "You do not have permission for this action"),
-      } } },
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/ApiError" },
+          examples: {
+            forbidden: errorExample("FORBIDDEN", "You do not have permission for this action"),
+          },
+        },
+      },
     },
     ClassNotFound: {
       description: "Class does not exist",
-      content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" }, examples: {
-        missing: errorExample("CLASS_NOT_FOUND", "Class was not found"),
-      } } },
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/ApiError" },
+          examples: {
+            missing: errorExample("CLASS_NOT_FOUND", "Class was not found"),
+          },
+        },
+      },
     },
     TooManyRequests: {
       description: "Authentication rate limit exceeded",
-      content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/ApiError" },
+        },
+      },
     },
   },
 } as const;

@@ -1,6 +1,6 @@
 import type { ClassWithCountRow, PublicClass } from "../types/class.js";
 
-export const toPublicClass = (record: ClassWithCountRow): PublicClass => {
+export const toPublicClass = (record: ClassWithCountRow, isEnrolled?: boolean): PublicClass => {
   const availableSlots = Math.max(record.max_students - record.current_students, 0);
   return {
     id: record.id,
@@ -15,5 +15,6 @@ export const toPublicClass = (record: ClassWithCountRow): PublicClass => {
     maxStudents: record.max_students,
     availableSlots,
     isFull: availableSlots === 0,
+    ...(isEnrolled === undefined ? {} : { isEnrolled }),
   };
 };
