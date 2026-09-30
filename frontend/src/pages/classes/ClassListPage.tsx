@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ClassCard } from '../../components/classes/ClassCard'
 import { EmptyState, ErrorState, LoadingState } from '../../components/feedback/States'
@@ -14,10 +14,23 @@ export function ClassListPage() {
   const searchParam = params.get('search') ?? ''
   const [search, setSearch] = useState(searchParam)
   const debounced = useDebouncedValue(search)
+  const lastPushedSearch = useRef(searchParam)
   const page = readPositivePage(params.get('page'))
   const level = readClassLevel(params.get('level'))
+
   useEffect(() => {
-    if (debounced === searchParam) return
+    if (searchParam === lastPushedSearch.current) return
+    setSearch(searchParam)
+  }, [searchParam])
+
+  useEffect(() => {
+    if (debounced === searchParam) {
+      lastPushedSearch.current = searchParam
+      return
+    }
+    if (searchParam !== lastPushedSearch.current) return
+
+    lastPushedSearch.current = debounced
     setParams(
       (current) => {
         if (debounced) current.set('search', debounced)

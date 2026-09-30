@@ -24,6 +24,7 @@ export function StudentsPage() {
         }}
       >
         <input
+          key={search}
           name="search"
           maxLength={100}
           defaultValue={search}
