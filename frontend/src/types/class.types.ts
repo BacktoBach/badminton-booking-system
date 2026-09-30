@@ -1,5 +1,10 @@
 export const classLevels = ['beginner', 'intermediate', 'advanced'] as const
 export type ClassLevel = (typeof classLevels)[number]
+export const levelLabels: Record<ClassLevel, string> = {
+  beginner: 'Cơ bản',
+  intermediate: 'Trung cấp',
+  advanced: 'Nâng cao',
+}
 
 export type BadmintonClass = {
   id: string

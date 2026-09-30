@@ -1,13 +1,8 @@
 import { CalendarDays, MapPin, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import type { BadmintonClass, ClassLevel } from '../../types/class.types'
+import { levelLabels, type BadmintonClass } from '../../types/class.types'
 import { formatDateTime, hasStarted } from '../../utils/date'
 
-const levelLabels: Record<ClassLevel, string> = {
-  beginner: 'Cơ bản',
-  intermediate: 'Trung cấp',
-  advanced: 'Nâng cao',
-}
 export function ClassCard({ item }: { item: BadmintonClass }) {
   const progress = Math.min(100, (item.currentStudents / item.maxStudents) * 100)
   const started = hasStarted(item.startDate)
