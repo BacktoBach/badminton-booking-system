@@ -8,11 +8,16 @@ import { useClasses } from '../../hooks/classes/useClasses'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { usePaginationBounds } from '../../hooks/usePaginationBounds'
 import { getErrorMessage } from '../../utils/api-error'
-import { readClassLevel, readPositivePage } from '../../utils/search-params'
+import {
+  readClassLevel,
+  readPositivePage,
+  readSearch,
+  SEARCH_MAX_LENGTH,
+} from '../../utils/search-params'
 
 export function ClassListPage() {
   const [params, setParams] = useSearchParams()
-  const searchParam = params.get('search') ?? ''
+  const searchParam = readSearch(params.get('search'))
   const [search, setSearch] = useState(searchParam)
   const debounced = useDebouncedValue(search)
   const lastPushedSearch = useRef(searchParam)
@@ -82,7 +87,7 @@ export function ClassListPage() {
             <Search className="absolute left-3 top-3 text-slate-400" size={20} />
             <span className="sr-only">Tìm theo tên lớp</span>
             <input
-              maxLength={100}
+              maxLength={SEARCH_MAX_LENGTH}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               className="w-full rounded-xl bg-slate-50 py-3 pl-11 pr-3 outline-none focus:ring-2 focus:ring-emerald-600"

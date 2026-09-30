@@ -7,13 +7,18 @@ import { useAdminClasses, useDeleteClass } from '../../hooks/classes/useClasses'
 import { usePaginationBounds } from '../../hooks/usePaginationBounds'
 import { getErrorMessage } from '../../utils/api-error'
 import { formatDateTime } from '../../utils/date'
-import { readClassLevel, readPositivePage } from '../../utils/search-params'
+import {
+  readClassLevel,
+  readPositivePage,
+  readSearch,
+  SEARCH_MAX_LENGTH,
+} from '../../utils/search-params'
 
 export function AdminClassesPage() {
   const [params, setParams] = useSearchParams()
   const page = readPositivePage(params.get('page'))
   const level = readClassLevel(params.get('level'))
-  const search = params.get('search')?.slice(0, 100) ?? ''
+  const search = readSearch(params.get('search'))
   const query = useAdminClasses({ page, limit: 9, level, search: search || undefined })
   const remove = useDeleteClass()
   const { showToast } = useToast()
@@ -62,11 +67,9 @@ export function AdminClassesPage() {
           className="relative"
           onSubmit={(event) => {
             event.preventDefault()
-            const value = new FormData(event.currentTarget)
-              .get('search')
-              ?.toString()
-              .trim()
-              .slice(0, 100)
+            const value = readSearch(
+              new FormData(event.currentTarget).get('search')?.toString() ?? null,
+            )
             updateParams({ search: value })
           }}
         >
@@ -74,7 +77,7 @@ export function AdminClassesPage() {
           <input
             key={search}
             name="search"
-            maxLength={100}
+            maxLength={SEARCH_MAX_LENGTH}
             defaultValue={search}
             className="w-full rounded-xl border border-slate-200 py-3 pl-11 pr-3 outline-none focus:ring-2 focus:ring-emerald-600"
             placeholder="Tìm tên lớp rồi nhấn Enter..."
