@@ -6,6 +6,7 @@ import { useToast } from '../../contexts/ToastContext'
 import { useCurrentUser } from '../../hooks/auth/useAuth'
 import { useClassDetail } from '../../hooks/classes/useClasses'
 import { useCancelEnrollment, useEnroll } from '../../hooks/enrollments/useEnrollments'
+import { levelLabels } from '../../types/class.types'
 import { getErrorMessage } from '../../utils/api-error'
 import { formatDateTime, hasStarted } from '../../utils/date'
 
@@ -54,7 +55,7 @@ export function ClassDetailPage() {
     <section className="mx-auto grid max-w-7xl gap-8 px-4 py-12 lg:grid-cols-[1.4fr_.8fr]">
       <article className="rounded-3xl border bg-white p-7 shadow-sm">
         <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase text-emerald-700">
-          {item.level}
+          {levelLabels[item.level]}
         </span>
         <h1 className="mt-5 text-3xl font-black sm:text-4xl">{item.title}</h1>
         <p className="mt-4 whitespace-pre-wrap text-slate-600">{item.description}</p>

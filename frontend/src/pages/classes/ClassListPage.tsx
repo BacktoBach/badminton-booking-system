@@ -7,6 +7,7 @@ import { Pagination } from '../../components/ui/Pagination'
 import { useClasses } from '../../hooks/classes/useClasses'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { usePaginationBounds } from '../../hooks/usePaginationBounds'
+import { classLevels, levelLabels } from '../../types/class.types'
 import { getErrorMessage } from '../../utils/api-error'
 import {
   readClassLevel,
@@ -101,9 +102,11 @@ export function ClassListPage() {
             className="rounded-xl border border-slate-200 px-3"
           >
             <option value="">Tất cả trình độ</option>
-            <option value="beginner">Cơ bản</option>
-            <option value="intermediate">Trung cấp</option>
-            <option value="advanced">Nâng cao</option>
+            {classLevels.map((value) => (
+              <option key={value} value={value}>
+                {levelLabels[value]}
+              </option>
+            ))}
           </select>
         </div>
         <div className="mt-6">

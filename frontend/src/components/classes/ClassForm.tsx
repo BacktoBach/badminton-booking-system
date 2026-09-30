@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { Button } from '../ui/Button'
 import { InputField, SelectField, TextareaField } from '../ui/FormField'
 import { classEditFormSchema, classFormSchema } from '../../schemas/class.schema'
-import type { ClassWriteInput } from '../../types/class.types'
+import { classLevels, levelLabels, type ClassWriteInput } from '../../types/class.types'
 import {
   businessDateTimeInputToIso,
   hasStarted,
@@ -147,9 +147,11 @@ export function ClassForm({ mode, initial, pending, apiError, onSubmit }: ClassF
           error={errors.level?.message}
           {...register('level')}
         >
-          <option value="beginner">Cơ bản</option>
-          <option value="intermediate">Trung cấp</option>
-          <option value="advanced">Nâng cao</option>
+          {classLevels.map((value) => (
+            <option key={value} value={value}>
+              {levelLabels[value]}
+            </option>
+          ))}
         </SelectField>
       </section>
       <section className="grid gap-5 rounded-2xl border bg-white p-6 sm:grid-cols-2">

@@ -5,6 +5,7 @@ import { Pagination } from '../../components/ui/Pagination'
 import { useToast } from '../../contexts/ToastContext'
 import { useAdminClasses, useDeleteClass } from '../../hooks/classes/useClasses'
 import { usePaginationBounds } from '../../hooks/usePaginationBounds'
+import { classLevels, levelLabels } from '../../types/class.types'
 import { getErrorMessage } from '../../utils/api-error'
 import { formatDateTime } from '../../utils/date'
 import {
@@ -90,9 +91,11 @@ export function AdminClassesPage() {
           className="rounded-xl border border-slate-200 px-3"
         >
           <option value="">Tất cả trình độ</option>
-          <option value="beginner">Cơ bản</option>
-          <option value="intermediate">Trung cấp</option>
-          <option value="advanced">Nâng cao</option>
+          {classLevels.map((value) => (
+            <option key={value} value={value}>
+              {levelLabels[value]}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -125,7 +128,7 @@ export function AdminClassesPage() {
                       </small>
                     </td>
                     <td>{formatDateTime(item.startDate)}</td>
-                    <td>{item.level}</td>
+                    <td>{levelLabels[item.level]}</td>
                     <td>
                       {item.currentStudents}/{item.maxStudents}
                     </td>
