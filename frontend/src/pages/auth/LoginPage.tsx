@@ -9,6 +9,7 @@ import { useLogin } from '../../hooks/auth/useAuth'
 import { loginSchema } from '../../schemas/auth.schema'
 import type { LoginInput } from '../../types/auth.types'
 import { applyApiFieldErrors } from '../../utils/form-error'
+import { getPostLoginPath } from '../../utils/post-login-redirect'
 
 export function LoginPage() {
   const {
@@ -29,9 +30,7 @@ export function LoginPage() {
       onSuccess: ({ user }) => {
         showToast('Đăng nhập thành công.')
         const requested = (location.state as { from?: string } | null)?.from
-        navigate(requested ?? (user.role === 'admin' ? '/admin/classes' : '/classes'), {
-          replace: true,
-        })
+        navigate(getPostLoginPath(user.role, requested), { replace: true })
       },
       onError: (error) => {
         const apiError = applyApiFieldErrors(error, setError, ['email', 'password', 'remember'])
