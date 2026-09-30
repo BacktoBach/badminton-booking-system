@@ -28,7 +28,7 @@ describe('buildClassUpdateInput', () => {
 
   it('normalizes a changed start date to ISO format', () => {
     expect(buildClassUpdateInput(values, { startDate: true })).toEqual({
-      startDate: new Date(values.startDate).toISOString(),
+      startDate: '2030-05-10T12:30:00.000Z',
     })
   })
 })

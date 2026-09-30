@@ -5,18 +5,16 @@ import { Button } from '../ui/Button'
 import { InputField, SelectField, TextareaField } from '../ui/FormField'
 import { classEditFormSchema, classFormSchema } from '../../schemas/class.schema'
 import type { ClassWriteInput } from '../../types/class.types'
-import { hasStarted, parseDate } from '../../utils/date'
+import {
+  businessDateTimeInputToIso,
+  hasStarted,
+  parseBusinessDateTimeInput,
+  toBusinessDateTimeInput,
+} from '../../utils/date'
 import { applyApiFieldErrors } from '../../utils/form-error'
 
 type FormValues = Omit<ClassWriteInput, 'startDate'> & { startDate: string }
 type DirtyFields = Partial<Record<keyof FormValues, boolean>>
-
-const toLocalInput = (value?: string) => {
-  const date = parseDate(value)
-  return date
-    ? new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
-    : ''
-}
 
 export const buildClassUpdateInput = (
   values: FormValues,
@@ -27,7 +25,7 @@ export const buildClassUpdateInput = (
   if (dirtyFields.description) input.description = values.description
   if (dirtyFields.coachName) input.coachName = values.coachName
   if (dirtyFields.level) input.level = values.level
-  if (dirtyFields.startDate) input.startDate = new Date(values.startDate).toISOString()
+  if (dirtyFields.startDate) input.startDate = businessDateTimeInputToIso(values.startDate)
   if (dirtyFields.schedule) input.schedule = values.schedule
   if (dirtyFields.location) input.location = values.location
   if (dirtyFields.maxStudents) input.maxStudents = Number(values.maxStudents)
@@ -67,7 +65,7 @@ export function ClassForm({ mode, initial, pending, apiError, onSubmit }: ClassF
       description: initial?.description ?? '',
       coachName: initial?.coachName ?? '',
       level: initial?.level ?? 'beginner',
-      startDate: toLocalInput(initial?.startDate),
+      startDate: toBusinessDateTimeInput(initial?.startDate),
       schedule: initial?.schedule ?? '',
       location: initial?.location ?? '',
       maxStudents: initial?.maxStudents ?? 12,
@@ -92,13 +90,16 @@ export function ClassForm({ mode, initial, pending, apiError, onSubmit }: ClassF
     if (!editing) {
       onSubmit({
         ...values,
-        startDate: new Date(values.startDate).toISOString(),
+        startDate: businessDateTimeInputToIso(values.startDate),
         maxStudents: Number(values.maxStudents),
       })
       return
     }
 
-    if (dirtyFields.startDate && new Date(values.startDate).getTime() <= Date.now()) {
+    if (
+      dirtyFields.startDate &&
+      (parseBusinessDateTimeInput(values.startDate)?.getTime() ?? 0) <= Date.now()
+    ) {
       setError('startDate', { message: 'Ngày khai giảng phải ở tương lai' })
       return
     }
@@ -154,7 +155,7 @@ export function ClassForm({ mode, initial, pending, apiError, onSubmit }: ClassF
       <section className="grid gap-5 rounded-2xl border bg-white p-6 sm:grid-cols-2">
         <h2 className="sm:col-span-2 text-xl font-black">Lịch và sức chứa</h2>
         <InputField
-          label="Ngày khai giảng"
+          label="Ngày khai giảng (giờ VN)"
           fieldId="startDate"
           type="datetime-local"
           readOnly={classStarted}

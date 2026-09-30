@@ -6,6 +6,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/feedback/
 import { Pagination } from '../../components/ui/Pagination'
 import { useClasses } from '../../hooks/classes/useClasses'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { usePaginationBounds } from '../../hooks/usePaginationBounds'
 import { getErrorMessage } from '../../utils/api-error'
 import { readClassLevel, readPositivePage } from '../../utils/search-params'
 
@@ -41,7 +42,6 @@ export function ClassListPage() {
       { replace: true },
     )
   }, [debounced, searchParam, setParams])
-  const query = useClasses({ page, limit: 8, search: searchParam || undefined, level })
   const change = (key: string, value?: string) =>
     setParams((current) => {
       if (value) current.set(key, value)
@@ -49,6 +49,10 @@ export function ClassListPage() {
       if (key !== 'page') current.set('page', '1')
       return current
     })
+  const query = useClasses({ page, limit: 8, search: searchParam || undefined, level })
+  usePaginationBounds(page, query.data?.meta.totalPages, (lastPage) =>
+    change('page', String(lastPage)),
+  )
   return (
     <>
       <section className="bg-gradient-to-br from-emerald-50 to-sky-50">

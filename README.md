@@ -146,7 +146,7 @@ Request/response đầy đủ nằm trong [API contract](backend/docs/API_CONTRA
 
 ### Yêu cầu
 
-- Node.js 20 trở lên.
+- Node.js 22.12 trở lên.
 - npm 10 trở lên.
 - PostgreSQL 17.
 - Một development database và một test database độc lập.
