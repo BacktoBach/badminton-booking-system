@@ -3,36 +3,65 @@ import { useForm } from 'react-hook-form'
 import { useEffect } from 'react'
 import { Button } from '../ui/Button'
 import { InputField, SelectField, TextareaField } from '../ui/FormField'
-import { classFormSchema } from '../../schemas/class.schema'
+import { classEditFormSchema, classFormSchema } from '../../schemas/class.schema'
 import type { ClassWriteInput } from '../../types/class.types'
-import { parseDate } from '../../utils/date'
+import { hasStarted, parseDate } from '../../utils/date'
 import { applyApiFieldErrors } from '../../utils/form-error'
 
 type FormValues = Omit<ClassWriteInput, 'startDate'> & { startDate: string }
+type DirtyFields = Partial<Record<keyof FormValues, boolean>>
+
 const toLocalInput = (value?: string) => {
   const date = parseDate(value)
   return date
     ? new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
     : ''
 }
-export function ClassForm({
-  initial,
-  pending,
-  apiError,
-  onSubmit,
-}: {
-  initial?: Partial<ClassWriteInput>
+
+export const buildClassUpdateInput = (
+  values: FormValues,
+  dirtyFields: DirtyFields,
+): Partial<ClassWriteInput> => {
+  const input: Partial<ClassWriteInput> = {}
+  if (dirtyFields.title) input.title = values.title
+  if (dirtyFields.description) input.description = values.description
+  if (dirtyFields.coachName) input.coachName = values.coachName
+  if (dirtyFields.level) input.level = values.level
+  if (dirtyFields.startDate) input.startDate = new Date(values.startDate).toISOString()
+  if (dirtyFields.schedule) input.schedule = values.schedule
+  if (dirtyFields.location) input.location = values.location
+  if (dirtyFields.maxStudents) input.maxStudents = Number(values.maxStudents)
+  return input
+}
+
+type CommonProps = {
   pending: boolean
   apiError?: unknown
-  onSubmit: (input: ClassWriteInput) => void
-}) {
+}
+
+type ClassFormProps =
+  | (CommonProps & {
+      mode: 'create'
+      initial?: undefined
+      onSubmit: (input: ClassWriteInput) => void
+    })
+  | (CommonProps & {
+      mode: 'edit'
+      initial: ClassWriteInput
+      onSubmit: (input: Partial<ClassWriteInput>) => void
+    })
+
+export function ClassForm({ mode, initial, pending, apiError, onSubmit }: ClassFormProps) {
+  const editing = mode === 'edit'
+  const classStarted = editing && hasStarted(initial.startDate)
   const {
     register,
     handleSubmit,
     setError,
-    formState: { errors },
+    clearErrors,
+    formState: { dirtyFields, errors },
   } = useForm<FormValues>({
-    resolver: zodResolver(classFormSchema),
+    resolver: zodResolver(editing ? classEditFormSchema : classFormSchema),
     defaultValues: {
       title: initial?.title ?? '',
       description: initial?.description ?? '',
@@ -57,17 +86,33 @@ export function ClassForm({
         'maxStudents',
       ])
   }, [apiError, setError])
+
+  const submit = (values: FormValues) => {
+    clearErrors('root')
+    if (!editing) {
+      onSubmit({
+        ...values,
+        startDate: new Date(values.startDate).toISOString(),
+        maxStudents: Number(values.maxStudents),
+      })
+      return
+    }
+
+    if (dirtyFields.startDate && new Date(values.startDate).getTime() <= Date.now()) {
+      setError('startDate', { message: 'Ngày khai giảng phải ở tương lai' })
+      return
+    }
+
+    const input = buildClassUpdateInput(values, dirtyFields)
+    if (Object.keys(input).length === 0) {
+      setError('root', { message: 'Chưa có thông tin nào được thay đổi.' })
+      return
+    }
+    onSubmit(input)
+  }
+
   return (
-    <form
-      className="space-y-7"
-      onSubmit={handleSubmit((values) =>
-        onSubmit({
-          ...values,
-          startDate: new Date(values.startDate).toISOString(),
-          maxStudents: Number(values.maxStudents),
-        }),
-      )}
-    >
+    <form className="space-y-7" onSubmit={handleSubmit(submit)}>
       <section className="grid gap-5 rounded-2xl border bg-white p-6 sm:grid-cols-2">
         <h2 className="sm:col-span-2 text-xl font-black">Thông tin cơ bản</h2>
         <div className="sm:col-span-2">
@@ -112,6 +157,9 @@ export function ClassForm({
           label="Ngày khai giảng"
           fieldId="startDate"
           type="datetime-local"
+          readOnly={classStarted}
+          aria-readonly={classStarted}
+          hint={classStarted ? 'Không thể đổi ngày khai giảng của lớp đã bắt đầu.' : undefined}
           error={errors.startDate?.message}
           {...register('startDate')}
         />
@@ -140,7 +188,14 @@ export function ClassForm({
         />
       </section>
       <div className="flex justify-end">
-        <Button disabled={pending}>{pending ? 'Đang lưu…' : 'Lưu lớp học'}</Button>
+        <div className="text-right">
+          {errors.root?.message && (
+            <p className="mb-2 text-sm text-rose-600" role="alert">
+              {errors.root.message}
+            </p>
+          )}
+          <Button disabled={pending}>{pending ? 'Đang lưu…' : 'Lưu lớp học'}</Button>
+        </div>
       </div>
     </form>
   )

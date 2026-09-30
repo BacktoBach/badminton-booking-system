@@ -14,17 +14,41 @@ export function ClassFormPage() {
   const update = useUpdateClass(classId ?? '')
   const navigate = useNavigate()
   const { showToast } = useToast()
-  const mutation = editing ? update : create
   if (editing && detail.isPending) return <LoadingState />
   if (editing && detail.isError) return <ErrorState message={getErrorMessage(detail.error)} />
-  const submit = (input: ClassWriteInput) =>
-    mutation.mutate(input, {
-      onSuccess: () => {
-        showToast(editing ? 'Đã cập nhật lớp học.' : 'Đã tạo lớp học.')
-        navigate('/admin/classes')
-      },
-      onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }),
-    })
+
+  const mutationOptions = (successMessage: string) => ({
+    onSuccess: () => {
+      showToast(successMessage)
+      navigate('/admin/classes')
+    },
+    onError: (error: unknown) =>
+      showToast({ type: 'error' as const, message: getErrorMessage(error) }),
+  })
+
+  const submitCreate = (input: ClassWriteInput) =>
+    create.mutate(input, mutationOptions('Đã tạo lớp học.'))
+
+  const submitUpdate = (input: Partial<ClassWriteInput>) =>
+    update.mutate(input, mutationOptions('Đã cập nhật lớp học.'))
+
+  const form = editing ? (
+    <ClassForm
+      mode="edit"
+      initial={detail.data!}
+      pending={update.isPending}
+      apiError={update.error}
+      onSubmit={submitUpdate}
+    />
+  ) : (
+    <ClassForm
+      mode="create"
+      pending={create.isPending}
+      apiError={create.error}
+      onSubmit={submitCreate}
+    />
+  )
+
   return (
     <>
       <p className="font-bold uppercase tracking-wide text-emerald-700">Admin workspace</p>
@@ -34,12 +58,7 @@ export function ClassFormPage() {
       <p className="mt-2 mb-8 text-slate-500">
         Điền đầy đủ thông tin mà học viên cần để quyết định đăng ký.
       </p>
-      <ClassForm
-        initial={detail.data}
-        pending={mutation.isPending}
-        apiError={mutation.error}
-        onSubmit={submit}
-      />
+      {form}
     </>
   )
 }
