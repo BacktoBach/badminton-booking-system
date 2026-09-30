@@ -68,6 +68,7 @@ export function AdminClassesPage() {
         >
           <Search className="absolute left-3 top-3 text-slate-400" size={20} aria-hidden="true" />
           <input
+            key={search}
             name="search"
             maxLength={100}
             defaultValue={search}
