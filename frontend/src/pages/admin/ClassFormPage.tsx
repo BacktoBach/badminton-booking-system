@@ -1,5 +1,9 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import { ClassForm } from '../../components/classes/ClassForm'
+import {
+  ClassForm,
+  type ClassFormErrorHandler,
+  type ClassFormSubmitContext,
+} from '../../components/classes/ClassForm'
 import { ErrorState, LoadingState } from '../../components/feedback/States'
 import { useToast } from '../../contexts/ToastContext'
 import { useClassDetail, useCreateClass, useUpdateClass } from '../../hooks/classes/useClasses'
@@ -18,36 +22,34 @@ export function ClassFormPage() {
   if (editing && detail.isError)
     return <ErrorState message={getErrorMessage(detail.error)} onRetry={() => detail.refetch()} />
 
-  const mutationOptions = (successMessage: string) => ({
+  const mutationOptions = (successMessage: string, handleApiError: ClassFormErrorHandler) => ({
     onSuccess: () => {
       showToast(successMessage)
       navigate('/admin/classes')
     },
-    onError: (error: unknown) =>
-      showToast({ type: 'error' as const, message: getErrorMessage(error) }),
+    onError: (error: unknown) => {
+      const apiError = handleApiError(error)
+      showToast({ type: 'error' as const, message: apiError.message })
+    },
   })
 
-  const submitCreate = (input: ClassWriteInput) =>
-    create.mutate(input, mutationOptions('Đã tạo lớp học.'))
+  const submitCreate = (input: ClassWriteInput, { handleApiError }: ClassFormSubmitContext) =>
+    create.mutate(input, mutationOptions('Đã tạo lớp học.', handleApiError))
 
-  const submitUpdate = (input: Partial<ClassWriteInput>) =>
-    update.mutate(input, mutationOptions('Đã cập nhật lớp học.'))
+  const submitUpdate = (
+    input: Partial<ClassWriteInput>,
+    { handleApiError }: ClassFormSubmitContext,
+  ) => update.mutate(input, mutationOptions('Đã cập nhật lớp học.', handleApiError))
 
   const form = editing ? (
     <ClassForm
       mode="edit"
       initial={detail.data!}
       pending={update.isPending}
-      apiError={update.error}
       onSubmit={submitUpdate}
     />
   ) : (
-    <ClassForm
-      mode="create"
-      pending={create.isPending}
-      apiError={create.error}
-      onSubmit={submitCreate}
-    />
+    <ClassForm mode="create" pending={create.isPending} onSubmit={submitCreate} />
   )
 
   return (

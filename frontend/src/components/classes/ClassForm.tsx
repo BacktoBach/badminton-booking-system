@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import { useEffect } from 'react'
 import { Button } from '../ui/Button'
 import { InputField, SelectField, TextareaField } from '../ui/FormField'
 import { classEditFormSchema, classFormSchema } from '../../schemas/class.schema'
 import { classLevels, levelLabels, type ClassWriteInput } from '../../types/class.types'
+import type { AppApiError } from '../../types/api.types'
 import {
   businessDateTimeInputToIso,
   hasStarted,
@@ -34,22 +34,24 @@ export const buildClassUpdateInput = (
 
 type CommonProps = {
   pending: boolean
-  apiError?: unknown
 }
+
+export type ClassFormErrorHandler = (error: unknown) => AppApiError
+export type ClassFormSubmitContext = { handleApiError: ClassFormErrorHandler }
 
 type ClassFormProps =
   | (CommonProps & {
       mode: 'create'
       initial?: undefined
-      onSubmit: (input: ClassWriteInput) => void
+      onSubmit: (input: ClassWriteInput, context: ClassFormSubmitContext) => void
     })
   | (CommonProps & {
       mode: 'edit'
       initial: ClassWriteInput
-      onSubmit: (input: Partial<ClassWriteInput>) => void
+      onSubmit: (input: Partial<ClassWriteInput>, context: ClassFormSubmitContext) => void
     })
 
-export function ClassForm({ mode, initial, pending, apiError, onSubmit }: ClassFormProps) {
+export function ClassForm({ mode, initial, pending, onSubmit }: ClassFormProps) {
   const editing = mode === 'edit'
   const classStarted = editing && hasStarted(initial.startDate)
   const {
@@ -71,28 +73,29 @@ export function ClassForm({ mode, initial, pending, apiError, onSubmit }: ClassF
       maxStudents: initial?.maxStudents ?? 12,
     },
   })
-  useEffect(() => {
-    if (apiError)
-      applyApiFieldErrors(apiError, setError, [
-        'title',
-        'description',
-        'coachName',
-        'level',
-        'startDate',
-        'schedule',
-        'location',
-        'maxStudents',
-      ])
-  }, [apiError, setError])
+  const handleApiError: ClassFormErrorHandler = (error) =>
+    applyApiFieldErrors(error, setError, [
+      'title',
+      'description',
+      'coachName',
+      'level',
+      'startDate',
+      'schedule',
+      'location',
+      'maxStudents',
+    ])
 
   const submit = (values: FormValues) => {
     clearErrors('root')
     if (!editing) {
-      onSubmit({
-        ...values,
-        startDate: businessDateTimeInputToIso(values.startDate),
-        maxStudents: Number(values.maxStudents),
-      })
+      onSubmit(
+        {
+          ...values,
+          startDate: businessDateTimeInputToIso(values.startDate),
+          maxStudents: Number(values.maxStudents),
+        },
+        { handleApiError },
+      )
       return
     }
 
@@ -109,7 +112,7 @@ export function ClassForm({ mode, initial, pending, apiError, onSubmit }: ClassF
       setError('root', { message: 'Chưa có thông tin nào được thay đổi.' })
       return
     }
-    onSubmit(input)
+    onSubmit(input, { handleApiError })
   }
 
   return (
