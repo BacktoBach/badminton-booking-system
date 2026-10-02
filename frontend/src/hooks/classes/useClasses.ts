@@ -1,5 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { queryClient } from '../../config/query-client'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { classService } from '../../services/class.service'
 import type { ClassListParams, ClassWriteInput, StudentListParams } from '../../types/class.types'
 
@@ -38,27 +37,36 @@ export const useClassStudents = (id: string, params: StudentListParams) =>
     placeholderData: (previous) => previous,
   })
 
-const refreshClasses = () =>
+const refreshClasses = (queryClient: QueryClient) =>
   Promise.all([
     queryClient.invalidateQueries({ queryKey: classKeys.lists() }),
     queryClient.invalidateQueries({ queryKey: classKeys.adminLists() }),
   ])
 
-export const useCreateClass = () =>
-  useMutation({ mutationFn: classService.create, onSuccess: refreshClasses })
-export const useUpdateClass = (id: string) =>
-  useMutation({
+export const useCreateClass = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: classService.create,
+    onSuccess: () => refreshClasses(queryClient),
+  })
+}
+export const useUpdateClass = (id: string) => {
+  const queryClient = useQueryClient()
+  return useMutation({
     mutationFn: (input: Partial<ClassWriteInput>) => classService.update(id, input),
     onSuccess: (updated) => {
       queryClient.setQueryData(classKeys.detail(id), updated)
-      return refreshClasses()
+      return refreshClasses(queryClient)
     },
   })
-export const useDeleteClass = () =>
-  useMutation({
+}
+export const useDeleteClass = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
     mutationFn: classService.remove,
     onSuccess: (_, id) => {
       queryClient.removeQueries({ queryKey: classKeys.detail(id) })
-      return refreshClasses()
+      return refreshClasses(queryClient)
     },
   })
+}

@@ -1,6 +1,11 @@
-import { LoaderCircle, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { ClassCard } from '../../components/classes/ClassCard'
-import { EmptyState, ErrorState, LoadingState } from '../../components/feedback/States'
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  UpdatingContent,
+} from '../../components/feedback/States'
 import { Pagination } from '../../components/ui/Pagination'
 import { useClasses } from '../../hooks/classes/useClasses'
 import { useDebouncedSearchParam } from '../../hooks/useDebouncedSearchParam'
@@ -75,21 +80,8 @@ export function ClassListPage() {
             ))}
           </select>
         </div>
-        <div className="relative mt-6" aria-busy={isUpdating}>
-          {isUpdating && (
-            <div
-              className="absolute inset-x-0 top-3 z-10 mx-auto flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-lg"
-              role="status"
-              aria-live="polite"
-              aria-label="Đang cập nhật danh sách lớp"
-            >
-              <LoaderCircle className="animate-spin" size={17} aria-hidden="true" />
-              Đang cập nhật danh sách lớp…
-            </div>
-          )}
-          <div
-            className={`transition-opacity ${isUpdating ? 'pointer-events-none opacity-50' : ''}`}
-          >
+        <div className="mt-6">
+          <UpdatingContent updating={isUpdating} label="Đang cập nhật danh sách lớp">
             {query.isPending ? (
               <LoadingState />
             ) : query.isError ? (
@@ -110,7 +102,7 @@ export function ClassListPage() {
                 onPageChange={(value) => change('page', String(value))}
               />
             )}
-          </div>
+          </UpdatingContent>
         </div>
       </section>
     </>
