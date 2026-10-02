@@ -1,6 +1,11 @@
 import { useSearchParams } from 'react-router-dom'
 import { ClassCard } from '../../components/classes/ClassCard'
-import { EmptyState, ErrorState, LoadingState } from '../../components/feedback/States'
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  UpdatingContent,
+} from '../../components/feedback/States'
 import { Button } from '../../components/ui/Button'
 import { Pagination } from '../../components/ui/Pagination'
 import { useToast } from '../../contexts/ToastContext'
@@ -43,6 +48,7 @@ export function MyClassesPage() {
   const status = readEnrollmentStatus(params.get('status'))
   const page = readPositivePage(params.get('page'))
   const query = useMyEnrollments({ status, page, limit: 9 })
+  const isUpdating = query.isFetching && query.isPlaceholderData
   const update = (key: string, value: string) =>
     setParams((current) => {
       current.set(key, value)
@@ -68,26 +74,28 @@ export function MyClassesPage() {
         ))}
       </div>
       <div className="mt-7">
-        {query.isPending ? (
-          <LoadingState />
-        ) : query.isError ? (
-          <ErrorState message={getErrorMessage(query.error)} onRetry={() => query.refetch()} />
-        ) : query.data.data.length === 0 ? (
-          <EmptyState title="Bạn chưa có lớp phù hợp" />
-        ) : (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {query.data.data.map((item) => (
-              <EnrollmentItem key={item.id} item={item} />
-            ))}
-          </div>
-        )}
-        {query.data && (
-          <Pagination
-            page={query.data.meta.page}
-            totalPages={query.data.meta.totalPages}
-            onPageChange={(value) => update('page', String(value))}
-          />
-        )}
+        <UpdatingContent updating={isUpdating} label="Đang cập nhật lớp đã đăng ký">
+          {query.isPending ? (
+            <LoadingState />
+          ) : query.isError ? (
+            <ErrorState message={getErrorMessage(query.error)} onRetry={() => query.refetch()} />
+          ) : query.data.data.length === 0 ? (
+            <EmptyState title="Bạn chưa có lớp phù hợp" />
+          ) : (
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {query.data.data.map((item) => (
+                <EnrollmentItem key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+          {query.data && (
+            <Pagination
+              page={query.data.meta.page}
+              totalPages={query.data.meta.totalPages}
+              onPageChange={(value) => update('page', String(value))}
+            />
+          )}
+        </UpdatingContent>
       </div>
     </section>
   )

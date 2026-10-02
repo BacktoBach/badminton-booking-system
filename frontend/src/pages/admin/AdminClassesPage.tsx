@@ -1,6 +1,11 @@
 import { Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { EmptyState, ErrorState, LoadingState } from '../../components/feedback/States'
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  UpdatingContent,
+} from '../../components/feedback/States'
 import { Pagination } from '../../components/ui/Pagination'
 import { useToast } from '../../contexts/ToastContext'
 import { useAdminClasses, useDeleteClass } from '../../hooks/classes/useClasses'
@@ -16,6 +21,7 @@ export function AdminClassesPage() {
   const page = readPositivePage(params.get('page'))
   const level = readClassLevel(params.get('level'))
   const query = useAdminClasses({ page, limit: 9, level, search: searchParam || undefined })
+  const isUpdating = query.isFetching && query.isPlaceholderData
   const remove = useDeleteClass()
   const { showToast } = useToast()
 
@@ -86,79 +92,81 @@ export function AdminClassesPage() {
       </div>
 
       <div className="mt-6">
-        {query.isPending ? (
-          <LoadingState />
-        ) : query.isError ? (
-          <ErrorState message={getErrorMessage(query.error)} onRetry={() => query.refetch()} />
-        ) : query.data.data.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="overflow-x-auto rounded-2xl border bg-white">
-            <table className="w-full min-w-[800px] text-left">
-              <thead className="border-b bg-slate-50 text-xs uppercase text-slate-500">
-                <tr>
-                  <th scope="col" className="p-4">
-                    Lớp học
-                  </th>
-                  <th scope="col">Khai giảng</th>
-                  <th scope="col">Trình độ</th>
-                  <th scope="col">Học viên</th>
-                  <th scope="col">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {query.data.data.map((item) => (
-                  <tr key={item.id} className="border-b last:border-0">
-                    <td className="p-4">
-                      <strong>{item.title}</strong>
-                      <small className="block text-slate-500">
-                        {item.coachName} · {item.location}
-                      </small>
-                    </td>
-                    <td>{formatDateTime(item.startDate)}</td>
-                    <td>{levelLabels[item.level]}</td>
-                    <td>
-                      {item.currentStudents}/{item.maxStudents}
-                    </td>
-                    <td>
-                      <div className="flex gap-2">
-                        <Link
-                          aria-label={`Xem học viên lớp ${item.title}`}
-                          className="rounded-lg border p-2"
-                          to={`/admin/classes/${item.id}/students`}
-                        >
-                          <Users size={18} />
-                        </Link>
-                        <Link
-                          aria-label={`Chỉnh sửa lớp ${item.title}`}
-                          className="rounded-lg border p-2"
-                          to={`/admin/classes/${item.id}/edit`}
-                        >
-                          <Pencil size={18} />
-                        </Link>
-                        <button
-                          aria-label={`Xóa lớp ${item.title}`}
-                          className="rounded-lg border p-2 text-rose-600"
-                          disabled={remove.isPending}
-                          onClick={() => deleteClass(item.id, item.title)}
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
+        <UpdatingContent updating={isUpdating} label="Đang cập nhật danh sách quản trị">
+          {query.isPending ? (
+            <LoadingState />
+          ) : query.isError ? (
+            <ErrorState message={getErrorMessage(query.error)} onRetry={() => query.refetch()} />
+          ) : query.data.data.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div className="overflow-x-auto rounded-2xl border bg-white">
+              <table className="w-full min-w-[800px] text-left">
+                <thead className="border-b bg-slate-50 text-xs uppercase text-slate-500">
+                  <tr>
+                    <th scope="col" className="p-4">
+                      Lớp học
+                    </th>
+                    <th scope="col">Khai giảng</th>
+                    <th scope="col">Trình độ</th>
+                    <th scope="col">Học viên</th>
+                    <th scope="col">Thao tác</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {query.data && (
-          <Pagination
-            page={query.data.meta.page}
-            totalPages={query.data.meta.totalPages}
-            onPageChange={(value) => updateParams({ page: String(value) }, false)}
-          />
-        )}
+                </thead>
+                <tbody>
+                  {query.data.data.map((item) => (
+                    <tr key={item.id} className="border-b last:border-0">
+                      <td className="p-4">
+                        <strong>{item.title}</strong>
+                        <small className="block text-slate-500">
+                          {item.coachName} · {item.location}
+                        </small>
+                      </td>
+                      <td>{formatDateTime(item.startDate)}</td>
+                      <td>{levelLabels[item.level]}</td>
+                      <td>
+                        {item.currentStudents}/{item.maxStudents}
+                      </td>
+                      <td>
+                        <div className="flex gap-2">
+                          <Link
+                            aria-label={`Xem học viên lớp ${item.title}`}
+                            className="rounded-lg border p-2"
+                            to={`/admin/classes/${item.id}/students`}
+                          >
+                            <Users size={18} />
+                          </Link>
+                          <Link
+                            aria-label={`Chỉnh sửa lớp ${item.title}`}
+                            className="rounded-lg border p-2"
+                            to={`/admin/classes/${item.id}/edit`}
+                          >
+                            <Pencil size={18} />
+                          </Link>
+                          <button
+                            aria-label={`Xóa lớp ${item.title}`}
+                            className="rounded-lg border p-2 text-rose-600"
+                            disabled={remove.isPending}
+                            onClick={() => deleteClass(item.id, item.title)}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {query.data && (
+            <Pagination
+              page={query.data.meta.page}
+              totalPages={query.data.meta.totalPages}
+              onPageChange={(value) => updateParams({ page: String(value) }, false)}
+            />
+          )}
+        </UpdatingContent>
       </div>
     </>
   )

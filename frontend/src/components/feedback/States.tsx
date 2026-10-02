@@ -1,4 +1,5 @@
-import { AlertCircle, Inbox } from 'lucide-react'
+import { AlertCircle, Inbox, LoaderCircle } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Button } from '../ui/Button'
 
 export const LoadingState = () => (
@@ -8,6 +9,39 @@ export const LoadingState = () => (
     <div className="h-64 animate-pulse rounded-2xl bg-slate-200" />
   </div>
 )
+
+export function UpdatingContent({
+  updating,
+  label,
+  children,
+}: {
+  updating: boolean
+  label: string
+  children: ReactNode
+}) {
+  return (
+    <div className="relative" aria-busy={updating}>
+      {updating && (
+        <div
+          className="absolute inset-x-0 top-3 z-10 mx-auto flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-lg"
+          role="status"
+          aria-live="polite"
+          aria-label={label}
+        >
+          <LoaderCircle className="animate-spin" size={17} aria-hidden="true" />
+          {label}…
+        </div>
+      )}
+      <div
+        inert={updating || undefined}
+        className={`transition-opacity ${updating ? 'pointer-events-none opacity-50' : ''}`}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export const EmptyState = ({
   title = 'Chưa có dữ liệu',
   message = 'Không tìm thấy nội dung phù hợp.',
