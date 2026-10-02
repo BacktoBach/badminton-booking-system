@@ -45,7 +45,7 @@ export function StudentsPage() {
         {query.isPending ? (
           <LoadingState />
         ) : query.isError ? (
-          <ErrorState message={getErrorMessage(query.error)} />
+          <ErrorState message={getErrorMessage(query.error)} onRetry={() => query.refetch()} />
         ) : query.data.data.length === 0 ? (
           <EmptyState title="Chưa có học viên" />
         ) : (
