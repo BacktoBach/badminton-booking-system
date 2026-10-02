@@ -1,3 +1,5 @@
+import { createClientId } from './client-id'
+
 export type AuthSessionEventType = 'login' | 'logout' | 'password-changed' | 'expired'
 
 type AuthSessionEvent = {
@@ -9,10 +11,10 @@ type AuthSessionEvent = {
 
 const CHANNEL_NAME = 'badminton-auth-session'
 const STORAGE_KEY = 'badminton-auth-session-event'
-const sourceTabId = crypto.randomUUID()
+const sourceTabId = createClientId()
 
 const createEvent = (type: AuthSessionEventType): AuthSessionEvent => ({
-  id: crypto.randomUUID(),
+  id: createClientId(),
   sourceTabId,
   type,
   createdAt: Date.now(),

@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { createClientId } from '../utils/client-id'
 
 type ToastType = 'success' | 'error' | 'warning' | 'info'
 type ToastInput = { type?: ToastType; title?: string; message: string; duration?: number }
@@ -52,7 +53,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (input: string | ToastInput, type: ToastType = 'success', title?: string) => {
       const options = typeof input === 'string' ? { message: input } : input
       const toast: Toast = {
-        id: crypto.randomUUID(),
+        id: createClientId(),
         type: options.type ?? type,
         title: options.title ?? title,
         message: options.message,

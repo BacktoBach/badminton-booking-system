@@ -1,18 +1,18 @@
-import { useSearchParams, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/feedback/States'
 import { Pagination } from '../../components/ui/Pagination'
 import { useClassStudents } from '../../hooks/classes/useClasses'
+import { useDebouncedSearchParam } from '../../hooks/useDebouncedSearchParam'
 import { usePaginationBounds } from '../../hooks/usePaginationBounds'
 import { getErrorMessage } from '../../utils/api-error'
 import { formatDateTime } from '../../utils/date'
-import { readPositivePage, readSearch, SEARCH_MAX_LENGTH } from '../../utils/search-params'
+import { readPositivePage, SEARCH_MAX_LENGTH } from '../../utils/search-params'
 
 export function StudentsPage() {
   const { classId = '' } = useParams()
-  const [params, setParams] = useSearchParams()
+  const { params, search, searchParam, setParams, setSearch } = useDebouncedSearchParam()
   const page = readPositivePage(params.get('page'))
-  const search = readSearch(params.get('search'))
-  const query = useClassStudents(classId, { page, limit: 20, search: search || undefined })
+  const query = useClassStudents(classId, { page, limit: 20, search: searchParam || undefined })
   usePaginationBounds(page, query.data?.meta.totalPages, (lastPage) =>
     setParams((current) => {
       current.set('page', String(lastPage))
@@ -22,25 +22,16 @@ export function StudentsPage() {
   return (
     <>
       <h1 className="text-3xl font-black">Danh sách học viên</h1>
-      <form
-        className="mt-6"
-        onSubmit={(event) => {
-          event.preventDefault()
-          const value = readSearch(
-            new FormData(event.currentTarget).get('search')?.toString() ?? null,
-          )
-          setParams(value ? { search: value, page: '1' } : { page: '1' })
-        }}
-      >
+      <label className="mt-6 block max-w-lg">
+        <span className="sr-only">Tìm học viên theo tên hoặc email</span>
         <input
-          key={search}
-          name="search"
           maxLength={SEARCH_MAX_LENGTH}
-          defaultValue={search}
-          className="w-full max-w-lg rounded-xl border bg-white px-4 py-3"
-          placeholder="Tìm theo tên hoặc email rồi nhấn Enter..."
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          className="w-full rounded-xl border bg-white px-4 py-3"
+          placeholder="Tìm theo tên hoặc email..."
         />
-      </form>
+      </label>
       <div className="mt-6">
         {query.isPending ? (
           <LoadingState />

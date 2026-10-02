@@ -1,26 +1,21 @@
 import { Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/feedback/States'
 import { Pagination } from '../../components/ui/Pagination'
 import { useToast } from '../../contexts/ToastContext'
 import { useAdminClasses, useDeleteClass } from '../../hooks/classes/useClasses'
+import { useDebouncedSearchParam } from '../../hooks/useDebouncedSearchParam'
 import { usePaginationBounds } from '../../hooks/usePaginationBounds'
 import { classLevels, levelLabels } from '../../types/class.types'
 import { getErrorMessage } from '../../utils/api-error'
 import { formatDateTime } from '../../utils/date'
-import {
-  readClassLevel,
-  readPositivePage,
-  readSearch,
-  SEARCH_MAX_LENGTH,
-} from '../../utils/search-params'
+import { readClassLevel, readPositivePage, SEARCH_MAX_LENGTH } from '../../utils/search-params'
 
 export function AdminClassesPage() {
-  const [params, setParams] = useSearchParams()
+  const { params, search, searchParam, setParams, setSearch } = useDebouncedSearchParam()
   const page = readPositivePage(params.get('page'))
   const level = readClassLevel(params.get('level'))
-  const search = readSearch(params.get('search'))
-  const query = useAdminClasses({ page, limit: 9, level, search: search || undefined })
+  const query = useAdminClasses({ page, limit: 9, level, search: searchParam || undefined })
   const remove = useDeleteClass()
   const { showToast } = useToast()
 
@@ -64,26 +59,17 @@ export function AdminClassesPage() {
       </div>
 
       <div className="mt-7 grid gap-3 rounded-2xl border bg-white p-4 md:grid-cols-[1fr_220px]">
-        <form
-          className="relative"
-          onSubmit={(event) => {
-            event.preventDefault()
-            const value = readSearch(
-              new FormData(event.currentTarget).get('search')?.toString() ?? null,
-            )
-            updateParams({ search: value })
-          }}
-        >
+        <label className="relative">
           <Search className="absolute left-3 top-3 text-slate-400" size={20} aria-hidden="true" />
+          <span className="sr-only">Tìm theo tên lớp</span>
           <input
-            key={search}
-            name="search"
             maxLength={SEARCH_MAX_LENGTH}
-            defaultValue={search}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
             className="w-full rounded-xl border border-slate-200 py-3 pl-11 pr-3 outline-none focus:ring-2 focus:ring-emerald-600"
-            placeholder="Tìm tên lớp rồi nhấn Enter..."
+            placeholder="Tìm theo tên lớp..."
           />
-        </form>
+        </label>
         <select
           aria-label="Lọc trình độ"
           value={level ?? ''}
