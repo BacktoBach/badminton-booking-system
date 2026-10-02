@@ -1,53 +1,18 @@
 import { Search } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { ClassCard } from '../../components/classes/ClassCard'
 import { EmptyState, ErrorState, LoadingState } from '../../components/feedback/States'
 import { Pagination } from '../../components/ui/Pagination'
 import { useClasses } from '../../hooks/classes/useClasses'
-import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { useDebouncedSearchParam } from '../../hooks/useDebouncedSearchParam'
 import { usePaginationBounds } from '../../hooks/usePaginationBounds'
 import { classLevels, levelLabels } from '../../types/class.types'
 import { getErrorMessage } from '../../utils/api-error'
-import {
-  readClassLevel,
-  readPositivePage,
-  readSearch,
-  SEARCH_MAX_LENGTH,
-} from '../../utils/search-params'
+import { readClassLevel, readPositivePage, SEARCH_MAX_LENGTH } from '../../utils/search-params'
 
 export function ClassListPage() {
-  const [params, setParams] = useSearchParams()
-  const searchParam = readSearch(params.get('search'))
-  const [search, setSearch] = useState(searchParam)
-  const debounced = useDebouncedValue(search)
-  const lastPushedSearch = useRef(searchParam)
+  const { params, search, searchParam, setParams, setSearch } = useDebouncedSearchParam()
   const page = readPositivePage(params.get('page'))
   const level = readClassLevel(params.get('level'))
-
-  useEffect(() => {
-    if (searchParam === lastPushedSearch.current) return
-    setSearch(searchParam)
-  }, [searchParam])
-
-  useEffect(() => {
-    if (debounced === searchParam) {
-      lastPushedSearch.current = searchParam
-      return
-    }
-    if (searchParam !== lastPushedSearch.current) return
-
-    lastPushedSearch.current = debounced
-    setParams(
-      (current) => {
-        if (debounced) current.set('search', debounced)
-        else current.delete('search')
-        current.set('page', '1')
-        return current
-      },
-      { replace: true },
-    )
-  }, [debounced, searchParam, setParams])
   const change = (key: string, value?: string) =>
     setParams((current) => {
       if (value) current.set(key, value)
