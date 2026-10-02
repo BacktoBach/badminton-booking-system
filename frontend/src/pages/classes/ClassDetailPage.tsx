@@ -114,7 +114,7 @@ export function ClassDetailPage() {
           ) : item.isEnrolled && isUser ? (
             <Button
               className="mt-5 w-full"
-              variant="secondary"
+              variant="danger"
               disabled={started || cancel.isPending}
               onClick={handleCancel}
             >

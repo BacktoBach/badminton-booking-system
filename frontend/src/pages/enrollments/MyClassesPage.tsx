@@ -26,7 +26,7 @@ function EnrollmentItem({ item }: { item: Parameters<typeof ClassCard>[0]['item'
       <ClassCard item={item} />
       {!started && (
         <Button
-          variant="secondary"
+          variant="danger"
           className="mt-2 w-full"
           disabled={cancel.isPending}
           onClick={handleCancel}

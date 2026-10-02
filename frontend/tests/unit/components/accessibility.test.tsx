@@ -1,9 +1,16 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { LoadingState } from '../../../src/components/feedback/States'
+import { Button } from '../../../src/components/ui/Button'
 import { SelectField, TextareaField } from '../../../src/components/ui/FormField'
 
 describe('shared component accessibility', () => {
+  it('styles destructive actions with the danger variant', () => {
+    render(<Button variant="danger">Hủy đăng ký</Button>)
+
+    expect(screen.getByRole('button', { name: 'Hủy đăng ký' })).toHaveClass('bg-rose-600')
+  })
+
   it('announces the loading state', () => {
     render(<LoadingState />)
 
