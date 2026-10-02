@@ -2,7 +2,8 @@ import { AlertCircle, Inbox } from 'lucide-react'
 import { Button } from '../ui/Button'
 
 export const LoadingState = () => (
-  <div className="grid gap-4 sm:grid-cols-2" aria-label="Đang tải">
+  <div className="grid gap-4 sm:grid-cols-2" role="status" aria-live="polite">
+    <span className="sr-only">Đang tải dữ liệu…</span>
     <div className="h-64 animate-pulse rounded-2xl bg-slate-200" />
     <div className="h-64 animate-pulse rounded-2xl bg-slate-200" />
   </div>
