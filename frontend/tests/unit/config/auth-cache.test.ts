@@ -36,4 +36,29 @@ describe('auth cache', () => {
 
     unsubscribe()
   })
+
+  it('removes private and user-specific data while preserving public class lists', () => {
+    const publicListKey = ['classes', 'list', { page: 1 }] as const
+    const adminListKey = ['classes', 'admin-list', { page: 1 }] as const
+    const detailKey = ['classes', 'detail', 'class-1'] as const
+    const studentsKey = ['classes', 'class-1', 'students', { page: 1 }] as const
+    const enrollmentsKey = ['enrollments', 'mine', { page: 1 }] as const
+
+    queryClient.setQueryData(publicListKey, { data: ['public-class'] })
+    queryClient.setQueryData(adminListKey, { data: ['admin-class'] })
+    queryClient.setQueryData(detailKey, { id: 'class-1', isEnrolled: true })
+    queryClient.setQueryData(studentsKey, {
+      data: [{ name: 'Student', email: 'student@example.com' }],
+    })
+    queryClient.setQueryData(enrollmentsKey, { data: ['enrollment'] })
+
+    clearAuthSession()
+
+    expect(queryClient.getQueryData(publicListKey)).toEqual({ data: ['public-class'] })
+    expect(queryClient.getQueryData(adminListKey)).toBeUndefined()
+    expect(queryClient.getQueryData(detailKey)).toBeUndefined()
+    expect(queryClient.getQueryData(studentsKey)).toBeUndefined()
+    expect(queryClient.getQueryData(enrollmentsKey)).toBeUndefined()
+    expect(queryClient.getQueryData(authKeys.me())).toBeNull()
+  })
 })
