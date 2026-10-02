@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
 import { http, HttpResponse } from 'msw'
 import { screen } from '@testing-library/react'
-import { Route, Routes } from 'react-router-dom'
+import userEvent from '@testing-library/user-event'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
-import { authKeys, clearAuthSession } from '../../src/config/auth-cache'
-import { apiClient, setUnauthorizedHandler } from '../../src/config/axios'
+import { SessionLifecycle } from '../../src/components/auth/SessionLifecycle'
+import { authKeys } from '../../src/config/auth-cache'
+import { apiClient } from '../../src/config/axios'
 import { queryClient } from '../../src/config/query-client'
 import { ProtectedRoute } from '../../src/routes/ProtectedRoute'
 import type { AuthSession } from '../../src/types/auth.types'
@@ -22,10 +23,21 @@ const session: AuthSession = {
 }
 
 function ProtectedRequest() {
-  useEffect(() => {
-    void apiClient.get('/test-protected').catch(() => undefined)
-  }, [])
-  return <h1>Nội dung riêng tư</h1>
+  return (
+    <button onClick={() => void apiClient.get('/test-protected').catch(() => undefined)}>
+      Gọi API riêng tư
+    </button>
+  )
+}
+
+function LoginPage() {
+  const location = useLocation()
+  return (
+    <>
+      <h1>Trang đăng nhập</h1>
+      <p>{(location.state as { from?: string } | null)?.from}</p>
+    </>
+  )
 }
 
 describe('protected API unauthorized handling', () => {
@@ -39,19 +51,60 @@ describe('protected API unauthorized handling', () => {
       ),
     )
     queryClient.setQueryData(authKeys.me(), session)
-    setUnauthorizedHandler(clearAuthSession)
 
     renderWithProviders(
-      <Routes>
-        <Route path="/login" element={<h1>Trang đăng nhập</h1>} />
-        <Route element={<ProtectedRoute />}>
-          <Route path="/private" element={<ProtectedRequest />} />
-        </Route>
-      </Routes>,
-      { route: '/private', queryClient },
+      <>
+        <SessionLifecycle />
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/my-classes" element={<ProtectedRequest />} />
+          </Route>
+        </Routes>
+      </>,
+      { route: '/my-classes?status=upcoming', queryClient },
     )
 
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Gọi API riêng tư' }))
+
     expect(await screen.findByRole('heading', { name: 'Trang đăng nhập' })).toBeInTheDocument()
+    expect(screen.getByText('/my-classes?status=upcoming')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('Phiên đăng nhập đã hết hạn')
     expect(queryClient.getQueryData(authKeys.me())).toBeNull()
+  })
+
+  it('shows the expiry warning without leaving a public route', async () => {
+    server.use(
+      http.get('*/api/test-protected', () =>
+        HttpResponse.json(
+          { error: { code: 'AUTH_REQUIRED', message: 'Authentication is required' } },
+          { status: 401 },
+        ),
+      ),
+    )
+    queryClient.setQueryData(authKeys.me(), session)
+
+    renderWithProviders(
+      <>
+        <SessionLifecycle />
+        <Routes>
+          <Route
+            path="/classes/:classId"
+            element={
+              <>
+                <h1>Chi tiết lớp</h1>
+                <ProtectedRequest />
+              </>
+            }
+          />
+        </Routes>
+      </>,
+      { route: '/classes/class-1', queryClient },
+    )
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Gọi API riêng tư' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Phiên đăng nhập đã hết hạn')
+    expect(screen.getByRole('heading', { name: 'Chi tiết lớp' })).toBeInTheDocument()
   })
 })
