@@ -1,4 +1,4 @@
-import { Search } from 'lucide-react'
+import { LoaderCircle, Search } from 'lucide-react'
 import { ClassCard } from '../../components/classes/ClassCard'
 import { EmptyState, ErrorState, LoadingState } from '../../components/feedback/States'
 import { Pagination } from '../../components/ui/Pagination'
@@ -21,6 +21,7 @@ export function ClassListPage() {
       return current
     })
   const query = useClasses({ page, limit: 8, search: searchParam || undefined, level })
+  const isUpdating = query.isFetching && query.isPlaceholderData
   usePaginationBounds(page, query.data?.meta.totalPages, (lastPage) =>
     change('page', String(lastPage)),
   )
@@ -74,27 +75,42 @@ export function ClassListPage() {
             ))}
           </select>
         </div>
-        <div className="mt-6">
-          {query.isPending ? (
-            <LoadingState />
-          ) : query.isError ? (
-            <ErrorState message={getErrorMessage(query.error)} onRetry={() => query.refetch()} />
-          ) : !query.data.data.length ? (
-            <EmptyState title="Không tìm thấy lớp" />
-          ) : (
-            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {query.data.data.map((item) => (
-                <ClassCard key={item.id} item={item} />
-              ))}
+        <div className="relative mt-6" aria-busy={isUpdating}>
+          {isUpdating && (
+            <div
+              className="absolute inset-x-0 top-3 z-10 mx-auto flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-emerald-800 shadow-lg"
+              role="status"
+              aria-live="polite"
+              aria-label="Đang cập nhật danh sách lớp"
+            >
+              <LoaderCircle className="animate-spin" size={17} aria-hidden="true" />
+              Đang cập nhật danh sách lớp…
             </div>
-          )}{' '}
-          {query.data && (
-            <Pagination
-              page={query.data.meta.page}
-              totalPages={query.data.meta.totalPages}
-              onPageChange={(value) => change('page', String(value))}
-            />
           )}
+          <div
+            className={`transition-opacity ${isUpdating ? 'pointer-events-none opacity-50' : ''}`}
+          >
+            {query.isPending ? (
+              <LoadingState />
+            ) : query.isError ? (
+              <ErrorState message={getErrorMessage(query.error)} onRetry={() => query.refetch()} />
+            ) : !query.data.data.length ? (
+              <EmptyState title="Không tìm thấy lớp" />
+            ) : (
+              <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                {query.data.data.map((item) => (
+                  <ClassCard key={item.id} item={item} />
+                ))}
+              </div>
+            )}
+            {query.data && (
+              <Pagination
+                page={query.data.meta.page}
+                totalPages={query.data.meta.totalPages}
+                onPageChange={(value) => change('page', String(value))}
+              />
+            )}
+          </div>
         </div>
       </section>
     </>
