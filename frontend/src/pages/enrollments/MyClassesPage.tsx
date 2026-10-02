@@ -71,7 +71,7 @@ export function MyClassesPage() {
         {query.isPending ? (
           <LoadingState />
         ) : query.isError ? (
-          <ErrorState message={getErrorMessage(query.error)} />
+          <ErrorState message={getErrorMessage(query.error)} onRetry={() => query.refetch()} />
         ) : query.data.data.length === 0 ? (
           <EmptyState title="Bạn chưa có lớp phù hợp" />
         ) : (

@@ -15,7 +15,8 @@ export function ClassFormPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
   if (editing && detail.isPending) return <LoadingState />
-  if (editing && detail.isError) return <ErrorState message={getErrorMessage(detail.error)} />
+  if (editing && detail.isError)
+    return <ErrorState message={getErrorMessage(detail.error)} onRetry={() => detail.refetch()} />
 
   const mutationOptions = (successMessage: string) => ({
     onSuccess: () => {
