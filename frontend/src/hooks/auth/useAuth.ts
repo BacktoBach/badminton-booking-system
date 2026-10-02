@@ -14,7 +14,6 @@ export const useCurrentUser = () =>
   useQuery<AuthSessionCache>({
     queryKey: authKeys.me(),
     queryFn: ({ signal }) => authService.me(signal),
-    retry: false,
   })
 
 export const useLogin = () =>

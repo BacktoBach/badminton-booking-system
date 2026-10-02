@@ -1,4 +1,5 @@
 import { screen } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { authKeys } from '../../src/config/auth-cache'
@@ -6,6 +7,7 @@ import { AdminRoute } from '../../src/routes/AdminRoute'
 import { ProtectedRoute } from '../../src/routes/ProtectedRoute'
 import type { AuthSession } from '../../src/types/auth.types'
 import { createTestQueryClient, renderWithProviders } from '../helpers/renderWithProviders'
+import { server } from '../msw/server'
 
 const userSession: AuthSession = {
   user: {
@@ -52,5 +54,17 @@ describe('route guards', () => {
     expect(
       await screen.findByRole('heading', { name: 'Không có quyền truy cập' }),
     ).toBeInTheDocument()
+  })
+
+  it('shows a retryable error instead of redirecting when the auth check has a network failure', async () => {
+    server.use(http.get('*/api/auth/me', () => HttpResponse.error()))
+
+    renderWithProviders(<TestRoutes />, { route: '/my-classes' })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Không thể tải dữ liệu' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Thử lại' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Trang đăng nhập' })).not.toBeInTheDocument()
   })
 })

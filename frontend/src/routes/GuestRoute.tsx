@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom'
-import { LoadingState } from '../components/feedback/States'
+import { ErrorState, LoadingState } from '../components/feedback/States'
 import { useCurrentUser } from '../hooks/auth/useAuth'
+import { getErrorMessage } from '../utils/api-error'
 
 export function GuestRoute() {
   const auth = useCurrentUser()
@@ -8,6 +9,12 @@ export function GuestRoute() {
     return (
       <div className="mx-auto max-w-3xl p-10">
         <LoadingState />
+      </div>
+    )
+  if (auth.isError && !auth.data)
+    return (
+      <div className="mx-auto max-w-3xl p-10">
+        <ErrorState message={getErrorMessage(auth.error)} onRetry={() => auth.refetch()} />
       </div>
     )
   if (!auth.data) return <Outlet />
