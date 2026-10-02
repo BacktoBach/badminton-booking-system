@@ -4,7 +4,6 @@ import { classService } from '../../services/class.service'
 import type { ClassListParams, ClassWriteInput, StudentListParams } from '../../types/class.types'
 
 export const classKeys = {
-  all: ['classes'] as const,
   lists: () => ['classes', 'list'] as const,
   list: (params: ClassListParams) => ['classes', 'list', params] as const,
   adminLists: () => ['classes', 'admin-list'] as const,

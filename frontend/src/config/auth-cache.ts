@@ -4,7 +4,6 @@ import type { AuthSession } from '../types/auth.types'
 export type AuthSessionCache = AuthSession | null
 
 export const authKeys = {
-  all: ['auth'] as const,
   me: () => ['auth', 'me'] as const,
 }
 
