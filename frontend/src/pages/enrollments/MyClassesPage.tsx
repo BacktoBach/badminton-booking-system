@@ -59,6 +59,7 @@ export function MyClassesPage() {
         {(['upcoming', 'past', 'all'] as const).map((value) => (
           <button
             key={value}
+            aria-pressed={status === value}
             onClick={() => update('status', value)}
             className={`rounded-full px-4 py-2 font-semibold ${status === value ? 'bg-emerald-700 text-white' : 'bg-white text-slate-600'}`}
           >

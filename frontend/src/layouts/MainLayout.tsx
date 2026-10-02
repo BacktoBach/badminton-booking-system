@@ -1,5 +1,6 @@
 import { ChevronDown, KeyRound, LogOut, Trophy, UserRound } from 'lucide-react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useCurrentUser, useLogout } from '../hooks/auth/useAuth'
 import { useToast } from '../contexts/ToastContext'
 import { getErrorMessage } from '../utils/api-error'
@@ -8,7 +9,20 @@ export function MainLayout() {
   const { data } = useCurrentUser()
   const logout = useLogout()
   const navigate = useNavigate()
+  const location = useLocation()
+  const userMenuRef = useRef<HTMLDetailsElement>(null)
   const { showToast } = useToast()
+  const closeUserMenu = () => userMenuRef.current?.removeAttribute('open')
+
+  useEffect(closeUserMenu, [location.pathname, location.search])
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!userMenuRef.current?.contains(event.target as Node)) closeUserMenu()
+    }
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick)
+  }, [])
   const handleLogout = () =>
     logout.mutate(undefined, {
       onSuccess: () => {
@@ -45,7 +59,13 @@ export function MainLayout() {
             )}
           </nav>
           {data ? (
-            <details className="group relative shrink-0">
+            <details
+              ref={userMenuRef}
+              className="group relative shrink-0"
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') closeUserMenu()
+              }}
+            >
               <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-sm hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 [&::-webkit-details-marker]:hidden">
                 <span className="grid size-8 place-items-center rounded-lg bg-emerald-50 text-emerald-700">
                   <UserRound size={17} />

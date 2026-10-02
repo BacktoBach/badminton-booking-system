@@ -111,11 +111,13 @@ export function AdminClassesPage() {
             <table className="w-full min-w-[800px] text-left">
               <thead className="border-b bg-slate-50 text-xs uppercase text-slate-500">
                 <tr>
-                  <th className="p-4">Lớp học</th>
-                  <th>Khai giảng</th>
-                  <th>Trình độ</th>
-                  <th>Học viên</th>
-                  <th>Thao tác</th>
+                  <th scope="col" className="p-4">
+                    Lớp học
+                  </th>
+                  <th scope="col">Khai giảng</th>
+                  <th scope="col">Trình độ</th>
+                  <th scope="col">Học viên</th>
+                  <th scope="col">Thao tác</th>
                 </tr>
               </thead>
               <tbody>

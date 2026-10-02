@@ -53,9 +53,11 @@ export function StudentsPage() {
             <table className="w-full text-left">
               <thead className="border-b bg-slate-50">
                 <tr>
-                  <th className="p-4">Họ tên</th>
-                  <th>Email</th>
-                  <th>Đăng ký lúc</th>
+                  <th scope="col" className="p-4">
+                    Họ tên
+                  </th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Đăng ký lúc</th>
                 </tr>
               </thead>
               <tbody>
