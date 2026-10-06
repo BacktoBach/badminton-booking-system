@@ -16,6 +16,11 @@
     "typecheck:client": "npm run typecheck --workspace frontend",
     "test:server": "npm run test --workspace backend",
     "test:client": "npm run test --workspace frontend",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:install": "playwright install chromium",
+    "typecheck:e2e": "tsc --noEmit -p e2e/tsconfig.json",
     "verify:client": "npm run typecheck:client && npm run test:client && npm run build:client",
     "test:coverage": "npm run test:coverage --workspace backend",
     "verify:server": "npm run typecheck:server && npm run test:coverage && npm run build:server && npm run db:check",
@@ -28,6 +33,7 @@
     "node": ">=22.12.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "jsdom": "^29.0.0"
   }
 }
