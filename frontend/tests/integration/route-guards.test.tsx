@@ -4,6 +4,7 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { authKeys } from '../../src/config/auth-cache'
 import { AdminRoute } from '../../src/routes/AdminRoute'
+import { GuestRoute } from '../../src/routes/GuestRoute'
 import { ProtectedRoute } from '../../src/routes/ProtectedRoute'
 import type { AuthSession } from '../../src/types/auth.types'
 import { createTestQueryClient, renderWithProviders } from '../helpers/renderWithProviders'
@@ -21,7 +22,10 @@ const userSession: AuthSession = {
 
 const TestRoutes = () => (
   <Routes>
-    <Route path="/login" element={<h1>Trang đăng nhập</h1>} />
+    <Route element={<GuestRoute />}>
+      <Route path="/login" element={<h1>Trang đăng nhập</h1>} />
+    </Route>
+    <Route path="/classes/:classId" element={<h1>Chi tiết lớp</h1>} />
     <Route path="/forbidden" element={<h1>Không có quyền truy cập</h1>} />
     <Route element={<ProtectedRoute />}>
       <Route path="/my-classes" element={<h1>Lớp của tôi</h1>} />
@@ -54,6 +58,21 @@ describe('route guards', () => {
     expect(
       await screen.findByRole('heading', { name: 'Không có quyền truy cập' }),
     ).toBeInTheDocument()
+  })
+
+  it('returns an authenticated user from login to the requested public route', async () => {
+    const queryClient = createTestQueryClient()
+    queryClient.setQueryData(authKeys.me(), userSession)
+
+    renderWithProviders(<TestRoutes />, {
+      route: {
+        pathname: '/login',
+        state: { from: '/classes/class-1' },
+      },
+      queryClient,
+    })
+
+    expect(await screen.findByRole('heading', { name: 'Chi tiết lớp' })).toBeInTheDocument()
   })
 
   it('shows a retryable error instead of redirecting when the auth check has a network failure', async () => {

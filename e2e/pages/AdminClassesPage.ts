@@ -71,6 +71,23 @@ export class AdminClassesPage {
     ).toBeVisible();
   }
 
+  async rejectCapacityBelowEnrollmentCount(
+    title: string,
+    maxStudents: number,
+  ): Promise<void> {
+    await this.row(title)
+      .getByRole("link", { name: `Chỉnh sửa lớp ${title}` })
+      .click();
+    await this.page.getByLabel("Số học viên tối đa").fill(String(maxStudents));
+    await this.page.getByRole("button", { name: "Lưu lớp học" }).click();
+    await expect(
+      this.page.getByRole("alert").filter({
+        hasText: "Sức chứa không thể thấp hơn số học viên hiện tại",
+      }),
+    ).toBeVisible();
+    await expect(this.page).toHaveURL(/\/edit$/);
+  }
+
   async deleteClass(title: string): Promise<void> {
     this.page.once("dialog", (dialog) => dialog.accept());
     await this.row(title)

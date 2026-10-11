@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, type RenderOptions } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, type InitialEntry } from 'react-router-dom'
 import type { ReactElement, ReactNode } from 'react'
 import { ToastProvider } from '../../src/contexts/ToastContext'
 
@@ -13,7 +13,7 @@ export const createTestQueryClient = () =>
   })
 
 type ProviderOptions = {
-  route?: string
+  route?: InitialEntry
   queryClient?: QueryClient
 }
 

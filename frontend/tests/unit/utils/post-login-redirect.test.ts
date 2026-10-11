@@ -11,6 +11,9 @@ describe('getPostLoginPath', () => {
     ['admin', '/my-classes/', '/admin/classes'],
     ['user', '/admin/classes', '/classes'],
     ['user', '/classes/123', '/classes/123'],
+    ['user', '/change-password', '/classes'],
+    ['admin', '/login', '/admin/classes'],
+    ['user', '/register', '/classes'],
     ['user', 'https://example.com', '/classes'],
     ['admin', '//example.com', '/admin/classes'],
   ] as const)('returns the correct destination for %s and %s', (role, requested, expected) => {

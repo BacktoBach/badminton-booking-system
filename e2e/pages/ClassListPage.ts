@@ -38,4 +38,14 @@ export class ClassListPage {
       this.page.getByRole("heading", { name: title, exact: true }),
     ).toBeVisible();
   }
+
+  async cancelEnrollment(title: string): Promise<void> {
+    const enrollment = this.card(title).locator("..");
+    this.page.once("dialog", (dialog) => dialog.accept());
+    await enrollment.getByRole("button", { name: "Hủy đăng ký" }).click();
+    await expect(
+      this.page.getByRole("status").filter({ hasText: "Đã hủy đăng ký lớp" }),
+    ).toBeVisible();
+    await expect(this.card(title)).toHaveCount(0);
+  }
 }

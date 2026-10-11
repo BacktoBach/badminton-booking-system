@@ -10,6 +10,7 @@ try {
 
 const frontendUrl = "http://127.0.0.1:5173";
 const backendUrl = "http://127.0.0.1:4000";
+const browserChannel = process.env.PLAYWRIGHT_BROWSER_CHANNEL?.trim();
 const e2eDatabaseUrl =
   process.env.E2E_DATABASE_URL ??
   "postgresql://postgres:postgres@127.0.0.1:5432/badminton_booking_e2e";
@@ -31,8 +32,9 @@ const backendEnvironment = {
 export default defineConfig({
   testDir: "./e2e/specs",
   fullyParallel: false,
+  forbidOnly: Boolean(process.env.CI),
   workers: 1,
-  retries: 0,
+  retries: process.env.CI ? 1 : 0,
   timeout: 30_000,
   expect: { timeout: 7_000 },
   reporter: process.env.CI
@@ -49,7 +51,7 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        channel: process.env.CI ? "chromium" : "chrome",
+        ...(browserChannel ? { channel: browserChannel } : {}),
       },
     },
   ],
@@ -63,7 +65,8 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: "npm run dev --workspace frontend -- --host 127.0.0.1",
+      command:
+        "npm run build --workspace frontend && npm run preview --workspace frontend -- --host 127.0.0.1",
       url: frontendUrl,
       env: { ...process.env, VITE_API_BASE_URL: "/api" },
       reuseExistingServer: false,

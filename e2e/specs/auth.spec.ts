@@ -8,7 +8,7 @@ test.describe("Authentication and session management", () => {
     browser,
   }) => {
     const auth = new AuthPage(page);
-    const unique = `${Date.now()}-${test.info().retry}`;
+    const unique = `${Date.now()}-${test.info().workerIndex}`;
     const account = {
       name: "E2E New Student",
       email: `student-${unique}@example.com`,
