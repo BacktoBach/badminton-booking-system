@@ -1,104 +1,21 @@
 import bcrypt from "bcryptjs";
 import type { PoolClient } from "pg";
+import {
+  E2E_ADMIN,
+  E2E_CAPACITY_USER,
+  E2E_CLASS_FIXTURES,
+  E2E_CLASS_IDS,
+  E2E_CLASS_TITLES,
+  E2E_DIRECTORY_STUDENT_COUNT,
+  E2E_DIRECTORY_TARGET,
+  E2E_RACE_USERS,
+  E2E_USER,
+} from "./e2e-fixtures.js";
 
-export const E2E_ADMIN = {
-  name: "E2E Admin",
-  email: "admin.e2e@example.com",
-  password: "AdminE2E123!",
-} as const;
-
-export const E2E_USER = {
-  name: "E2E Student",
-  email: "user.e2e@example.com",
-  password: "UserE2E123!",
-} as const;
-
-const E2E_CAPACITY_USER = {
-  name: "E2E Capacity Student",
-  email: "capacity.e2e@example.com",
-  password: "CapacityE2E123!",
-} as const;
-
-export const E2E_CLASS_IDS = {
-  booking: "30000000-0000-4000-8000-000000000001",
-  full: "30000000-0000-4000-8000-000000000002",
-  past: "30000000-0000-4000-8000-000000000003",
-  capacity: "30000000-0000-4000-8000-000000000101",
-  students: "30000000-0000-4000-8000-000000000102",
-} as const;
+export { E2E_ADMIN, E2E_CLASS_IDS, E2E_USER } from "./e2e-fixtures.js";
 
 type UserRow = { id: string };
-
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
-
-const classFixtures = [
-  {
-    id: E2E_CLASS_IDS.booking,
-    title: "E2E Booking Fundamentals",
-    description: "Lớp ổn định dùng để kiểm thử luồng đăng ký và hủy đăng ký.",
-    coachName: "Coach E2E One",
-    level: "beginner",
-    daysFromNow: 10,
-    schedule: "Thứ 2, Thứ 4 - 18:00",
-    location: "Sân E2E A",
-    maxStudents: 4,
-  },
-  {
-    id: E2E_CLASS_IDS.full,
-    title: "E2E Full Capacity",
-    description:
-      "Lớp đủ sĩ số dùng để kiểm thử quy tắc không nhận thêm học viên.",
-    coachName: "Coach E2E Two",
-    level: "intermediate",
-    daysFromNow: 12,
-    schedule: "Thứ 3 - 19:00",
-    location: "Sân E2E B",
-    maxStudents: 1,
-  },
-  {
-    id: E2E_CLASS_IDS.capacity,
-    title: "E2E Capacity Guard",
-    description:
-      "Lớp có nhiều học viên dùng để kiểm thử không thể giảm sức chứa quá thấp.",
-    coachName: "Coach Capacity Guard",
-    level: "intermediate",
-    daysFromNow: 14,
-    schedule: "Thứ 5 - 19:30",
-    location: "Sân E2E Capacity",
-    maxStudents: 3,
-  },
-  {
-    id: E2E_CLASS_IDS.students,
-    title: "E2E Student Directory",
-    description:
-      "Lớp có nhiều học viên dùng để kiểm thử tìm kiếm và phân trang danh sách.",
-    coachName: "Coach Student Directory",
-    level: "beginner",
-    daysFromNow: 16,
-    schedule: "Thứ 7 - 09:00",
-    location: "Sân E2E Students",
-    maxStudents: 30,
-  },
-  ...Array.from({ length: 8 }, (_, index) => ({
-    id: `30000000-0000-4000-8000-${String(index + 4).padStart(12, "0")}`,
-    title:
-      index === 0
-        ? "E2E Search Target Advanced"
-        : `E2E Pagination Class ${index + 1}`,
-    description: `Lớp dữ liệu E2E số ${index + 1} phục vụ tìm kiếm, lọc và phân trang.`,
-    coachName: `Coach E2E ${index + 3}`,
-    level:
-      index % 3 === 0
-        ? "advanced"
-        : index % 3 === 1
-          ? "intermediate"
-          : "beginner",
-    daysFromNow: 20 + index,
-    schedule: `Buổi E2E ${index + 1}`,
-    location: `Sân E2E ${index + 3}`,
-    maxStudents: 10,
-  })),
-] as const;
 
 const insertUser = async (
   client: PoolClient,
@@ -121,8 +38,11 @@ export const seedE2eDatabase = async (client: PoolClient): Promise<void> => {
   const adminId = await insertUser(client, E2E_ADMIN, "admin");
   const userId = await insertUser(client, E2E_USER, "user");
   const capacityUserId = await insertUser(client, E2E_CAPACITY_USER, "user");
+  await Promise.all(
+    E2E_RACE_USERS.map((user) => insertUser(client, user, "user")),
+  );
 
-  for (const fixture of classFixtures) {
+  for (const fixture of E2E_CLASS_FIXTURES) {
     await client.query(
       `INSERT INTO classes (
          id, title, description, coach_name, level, start_date,
@@ -150,7 +70,7 @@ export const seedE2eDatabase = async (client: PoolClient): Promise<void> => {
      ) VALUES ($1, $2, $3, $4, 'advanced', $5, $6, $7, 10, $8)`,
     [
       E2E_CLASS_IDS.past,
-      "E2E Past Enrollment",
+      E2E_CLASS_TITLES.past,
       "Lớp đã bắt đầu dùng để kiểm thử không thể hủy đăng ký sau khai giảng.",
       "Coach E2E Past",
       new Date(Date.now() + DAY_IN_MS),
@@ -162,7 +82,7 @@ export const seedE2eDatabase = async (client: PoolClient): Promise<void> => {
 
   await client.query(
     `INSERT INTO enrollments (class_id, user_id)
-     VALUES ($1, $2), ($3, $4), ($5, $6), ($5, $7)`,
+     VALUES ($1, $2), ($3, $4), ($5, $6), ($5, $7), ($8, $9)`,
     [
       E2E_CLASS_IDS.full,
       capacityUserId,
@@ -171,27 +91,27 @@ export const seedE2eDatabase = async (client: PoolClient): Promise<void> => {
       E2E_CLASS_IDS.capacity,
       userId,
       capacityUserId,
+      E2E_CLASS_IDS.deletable,
+      userId,
     ],
   );
 
-  for (let index = 1; index <= 21; index += 1) {
-    const studentId = await insertUser(
-      client,
-      {
-        name: index === 21 ? "Target Student" : `Directory Student ${index}`,
-        email:
-          index === 21
-            ? "target.student.e2e@example.com"
-            : `directory.student.${index}@example.com`,
-        password: "DirectoryE2E123!",
-      },
-      "user",
-    );
+  for (let index = 1; index <= E2E_DIRECTORY_STUDENT_COUNT; index += 1) {
+    const student =
+      index === E2E_DIRECTORY_STUDENT_COUNT
+        ? { ...E2E_DIRECTORY_TARGET, password: "DirectoryE2E123!" }
+        : {
+            name: `Directory Student ${index}`,
+            email: `directory.student.${index}@example.com`,
+            password: "DirectoryE2E123!",
+          };
+    const studentId = await insertUser(client, student, "user");
     await client.query(
       "INSERT INTO enrollments (class_id, user_id) VALUES ($1, $2)",
       [E2E_CLASS_IDS.students, studentId],
     );
   }
+
   await client.query("UPDATE classes SET start_date = $1 WHERE id = $2", [
     new Date(Date.now() - DAY_IN_MS),
     E2E_CLASS_IDS.past,

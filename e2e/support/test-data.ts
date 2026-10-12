@@ -1,38 +1,38 @@
-export const seededAdmin = {
-  name: "E2E Admin",
-  email: "admin.e2e@example.com",
-  password: "AdminE2E123!",
-} as const;
+import {
+  E2E_ADMIN,
+  E2E_CLASS_IDS,
+  E2E_CLASS_TITLES,
+  E2E_RACE_USERS,
+  E2E_SEARCH_TARGET,
+  E2E_USER,
+  E2E_DIRECTORY_TARGET,
+} from "../../backend/database/seeds/e2e-fixtures.js";
 
-export const seededUser = {
-  name: "E2E Student",
-  email: "user.e2e@example.com",
-  password: "UserE2E123!",
-} as const;
+export const seededAdmin = E2E_ADMIN;
+export const seededUser = E2E_USER;
+export const raceUsers = E2E_RACE_USERS;
 
 export const seededClasses = {
-  booking: {
-    id: "30000000-0000-4000-8000-000000000001",
-    title: "E2E Booking Fundamentals",
-  },
-  full: {
-    id: "30000000-0000-4000-8000-000000000002",
-    title: "E2E Full Capacity",
-  },
-  past: {
-    id: "30000000-0000-4000-8000-000000000003",
-    title: "E2E Past Enrollment",
-  },
-  capacity: {
-    id: "30000000-0000-4000-8000-000000000101",
-    title: "E2E Capacity Guard",
-  },
+  booking: { id: E2E_CLASS_IDS.booking, title: E2E_CLASS_TITLES.booking },
+  full: { id: E2E_CLASS_IDS.full, title: E2E_CLASS_TITLES.full },
+  past: { id: E2E_CLASS_IDS.past, title: E2E_CLASS_TITLES.past },
+  capacity: { id: E2E_CLASS_IDS.capacity, title: E2E_CLASS_TITLES.capacity },
   students: {
-    id: "30000000-0000-4000-8000-000000000102",
-    title: "E2E Student Directory",
-    searchEmail: "target.student.e2e@example.com",
+    id: E2E_CLASS_IDS.students,
+    title: E2E_CLASS_TITLES.students,
+    searchEmail: E2E_DIRECTORY_TARGET.email,
   },
-  searchTarget: "E2E Search Target Advanced",
+  duplicate: {
+    id: E2E_CLASS_IDS.duplicate,
+    title: E2E_CLASS_TITLES.duplicate,
+  },
+  finalSeat: { id: E2E_CLASS_IDS.finalSeat, title: E2E_CLASS_TITLES.finalSeat },
+  editable: { id: E2E_CLASS_IDS.editable, title: E2E_CLASS_TITLES.editable },
+  deletable: {
+    id: E2E_CLASS_IDS.deletable,
+    title: E2E_CLASS_TITLES.deletable,
+  },
+  searchTarget: E2E_SEARCH_TARGET,
 } as const;
 
 export const toFutureDateTimeLocal = (daysFromNow: number): string => {

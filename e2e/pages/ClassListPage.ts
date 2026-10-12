@@ -11,7 +11,7 @@ export class ClassListPage {
   }
 
   card(title: string): Locator {
-    return this.page.getByRole("article").filter({
+    return this.page.getByTestId("class-card").filter({
       has: this.page.getByRole("heading", { name: title, exact: true }),
     });
   }

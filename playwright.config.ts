@@ -14,6 +14,8 @@ const browserChannel = process.env.PLAYWRIGHT_BROWSER_CHANNEL?.trim();
 const e2eDatabaseUrl =
   process.env.E2E_DATABASE_URL ??
   "postgresql://postgres:postgres@127.0.0.1:5432/badminton_booking_e2e";
+const includeFirefox =
+  Boolean(process.env.CI) || process.env.PLAYWRIGHT_ENABLE_FIREFOX === "true";
 
 const backendEnvironment = {
   ...process.env,
@@ -30,10 +32,11 @@ const backendEnvironment = {
 };
 
 export default defineConfig({
-  testDir: "./e2e/specs",
-  fullyParallel: false,
+  testDir: "./e2e",
+  testMatch: "**/*.spec.ts",
+  fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
-  workers: 1,
+  workers: 2,
   retries: process.env.CI ? 1 : 0,
   timeout: 30_000,
   expect: { timeout: 7_000 },
@@ -48,12 +51,31 @@ export default defineConfig({
   },
   projects: [
     {
+      name: "setup",
+      testDir: "./e2e/setup",
+      testMatch: /.*\.setup\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
       name: "chromium",
+      testDir: "./e2e/specs",
+      dependencies: ["setup"],
       use: {
         ...devices["Desktop Chrome"],
         ...(browserChannel ? { channel: browserChannel } : {}),
       },
     },
+    ...(includeFirefox
+      ? [
+          {
+            name: "firefox-smoke",
+            testDir: "./e2e/specs",
+            testMatch: /cross-browser\.smoke\.spec\.ts/,
+            dependencies: ["setup"],
+            use: { ...devices["Desktop Firefox"] },
+          },
+        ]
+      : []),
   ],
   webServer: [
     {
