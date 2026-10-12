@@ -25,6 +25,13 @@ export class AuthPage {
     expectedPath: RegExp = /\/classes$/,
   ): Promise<void> {
     await this.page.goto("/login");
+    await this.submitLogin(credentials, expectedPath);
+  }
+
+  async submitLogin(
+    credentials: Credentials,
+    expectedPath: RegExp = /\/classes$/,
+  ): Promise<void> {
     await this.page.getByLabel("Email đăng ký").fill(credentials.email);
     await this.page
       .getByLabel("Mật khẩu", { exact: true })

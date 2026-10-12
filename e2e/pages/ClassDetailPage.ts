@@ -20,15 +20,4 @@ export class ClassDetailPage {
       this.page.getByRole("button", { name: "Hủy đăng ký" }),
     ).toBeVisible();
   }
-
-  async cancel(): Promise<void> {
-    this.page.once("dialog", (dialog) => dialog.accept());
-    await this.page.getByRole("button", { name: "Hủy đăng ký" }).click();
-    await expect(
-      this.page.getByRole("status").filter({ hasText: "Đã hủy đăng ký lớp" }),
-    ).toBeVisible();
-    await expect(
-      this.page.getByRole("button", { name: "Đăng ký lớp học" }),
-    ).toBeVisible();
-  }
 }

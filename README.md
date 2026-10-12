@@ -206,6 +206,8 @@ npm run typecheck:e2e
 npm run test:e2e
 ```
 
+Mặc định Playwright dùng Chromium đã được cài bởi `test:e2e:install`. Nếu Chromium không thể khởi động trên Windows nhưng máy đã có Google Chrome, đặt `$env:PLAYWRIGHT_BROWSER_CHANNEL = "chrome"` trước khi chạy test.
+
 Playwright tự khởi động backend tại `http://127.0.0.1:4000` và frontend tại `http://127.0.0.1:5173`. Không chạy hai server này thủ công khi bắt đầu E2E.
 
 Các chế độ chạy khác:
@@ -222,7 +224,7 @@ Test data cố định chỉ tồn tại trong database E2E:
 | Admin | `admin.e2e@example.com` | `AdminE2E123!` |
 | User  | `user.e2e@example.com`  | `UserE2E123!`  |
 
-Workflow `.github/workflows/e2e.yml` chạy Chromium cùng PostgreSQL 17 cho pull request và nhánh `main`, đồng thời upload Playwright report khi thất bại.
+Workflow `.github/workflows/e2e.yml` chạy Chromium cùng PostgreSQL 17 cho pull request và nhánh `main`, đồng thời luôn lưu Playwright report để kiểm tra kết quả.
 
 ## Bảo mật và production
 

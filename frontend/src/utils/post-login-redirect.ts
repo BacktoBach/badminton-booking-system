@@ -5,6 +5,8 @@ const defaultPathByRole: Record<UserRole, string> = {
   user: '/classes',
 }
 
+const authWorkflowPaths = new Set(['/login', '/register', '/change-password'])
+
 const isRouteForRole = (pathname: string, role: UserRole) => {
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
   const isUserRoute = pathname === '/my-classes' || pathname.startsWith('/my-classes/')
@@ -19,5 +21,6 @@ export const getPostLoginPath = (role: UserRole, requested?: string) => {
   if (!requested || !requested.startsWith('/') || requested.startsWith('//')) return fallback
 
   const pathname = requested.split(/[?#]/, 1)[0]
+  if (authWorkflowPaths.has(pathname)) return fallback
   return isRouteForRole(pathname, role) ? requested : fallback
 }

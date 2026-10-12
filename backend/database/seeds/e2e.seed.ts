@@ -23,6 +23,8 @@ export const E2E_CLASS_IDS = {
   booking: "30000000-0000-4000-8000-000000000001",
   full: "30000000-0000-4000-8000-000000000002",
   past: "30000000-0000-4000-8000-000000000003",
+  capacity: "30000000-0000-4000-8000-000000000101",
+  students: "30000000-0000-4000-8000-000000000102",
 } as const;
 
 type UserRow = { id: string };
@@ -52,6 +54,30 @@ const classFixtures = [
     schedule: "Thứ 3 - 19:00",
     location: "Sân E2E B",
     maxStudents: 1,
+  },
+  {
+    id: E2E_CLASS_IDS.capacity,
+    title: "E2E Capacity Guard",
+    description:
+      "Lớp có nhiều học viên dùng để kiểm thử không thể giảm sức chứa quá thấp.",
+    coachName: "Coach Capacity Guard",
+    level: "intermediate",
+    daysFromNow: 14,
+    schedule: "Thứ 5 - 19:30",
+    location: "Sân E2E Capacity",
+    maxStudents: 3,
+  },
+  {
+    id: E2E_CLASS_IDS.students,
+    title: "E2E Student Directory",
+    description:
+      "Lớp có nhiều học viên dùng để kiểm thử tìm kiếm và phân trang danh sách.",
+    coachName: "Coach Student Directory",
+    level: "beginner",
+    daysFromNow: 16,
+    schedule: "Thứ 7 - 09:00",
+    location: "Sân E2E Students",
+    maxStudents: 30,
   },
   ...Array.from({ length: 8 }, (_, index) => ({
     id: `30000000-0000-4000-8000-${String(index + 4).padStart(12, "0")}`,
@@ -135,9 +161,37 @@ export const seedE2eDatabase = async (client: PoolClient): Promise<void> => {
   );
 
   await client.query(
-    "INSERT INTO enrollments (class_id, user_id) VALUES ($1, $2), ($3, $4)",
-    [E2E_CLASS_IDS.full, capacityUserId, E2E_CLASS_IDS.past, userId],
+    `INSERT INTO enrollments (class_id, user_id)
+     VALUES ($1, $2), ($3, $4), ($5, $6), ($5, $7)`,
+    [
+      E2E_CLASS_IDS.full,
+      capacityUserId,
+      E2E_CLASS_IDS.past,
+      userId,
+      E2E_CLASS_IDS.capacity,
+      userId,
+      capacityUserId,
+    ],
   );
+
+  for (let index = 1; index <= 21; index += 1) {
+    const studentId = await insertUser(
+      client,
+      {
+        name: index === 21 ? "Target Student" : `Directory Student ${index}`,
+        email:
+          index === 21
+            ? "target.student.e2e@example.com"
+            : `directory.student.${index}@example.com`,
+        password: "DirectoryE2E123!",
+      },
+      "user",
+    );
+    await client.query(
+      "INSERT INTO enrollments (class_id, user_id) VALUES ($1, $2)",
+      [E2E_CLASS_IDS.students, studentId],
+    );
+  }
   await client.query("UPDATE classes SET start_date = $1 WHERE id = $2", [
     new Date(Date.now() - DAY_IN_MS),
     E2E_CLASS_IDS.past,

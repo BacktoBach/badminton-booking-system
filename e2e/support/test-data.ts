@@ -23,6 +23,15 @@ export const seededClasses = {
     id: "30000000-0000-4000-8000-000000000003",
     title: "E2E Past Enrollment",
   },
+  capacity: {
+    id: "30000000-0000-4000-8000-000000000101",
+    title: "E2E Capacity Guard",
+  },
+  students: {
+    id: "30000000-0000-4000-8000-000000000102",
+    title: "E2E Student Directory",
+    searchEmail: "target.student.e2e@example.com",
+  },
   searchTarget: "E2E Search Target Advanced",
 } as const;
 
