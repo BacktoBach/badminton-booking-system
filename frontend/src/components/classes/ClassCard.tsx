@@ -7,7 +7,11 @@ export function ClassCard({ item }: { item: BadmintonClass }) {
   const progress = Math.min(100, (item.currentStudents / item.maxStudents) * 100)
   const started = hasStarted(item.startDate)
   return (
-    <article className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <article
+      data-testid="class-card"
+      data-class-id={item.id}
+      className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+    >
       <div className="flex items-start justify-between gap-3">
         <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase text-emerald-700">
           {levelLabels[item.level]}
@@ -29,7 +33,7 @@ export function ClassCard({ item }: { item: BadmintonClass }) {
           <MapPin size={18} className="text-emerald-700" />
           {item.location}
         </p>
-        <p className="flex gap-2">
+        <p className="flex gap-2" data-testid="class-capacity">
           <Users size={18} className="text-emerald-700" />
           {item.currentStudents}/{item.maxStudents} học viên
         </p>

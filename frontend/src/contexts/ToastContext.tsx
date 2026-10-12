@@ -83,6 +83,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div
         className="pointer-events-none fixed left-auto right-3 top-3 z-50 flex w-[calc(100%-1.5rem)] max-w-[320px] flex-col items-end gap-2 sm:right-5 sm:top-5 sm:w-[390px] sm:max-w-none sm:gap-3"
+        role="region"
         aria-live="polite"
         aria-label="Thông báo"
       >

@@ -26,7 +26,7 @@ export const useEnroll = (classId: string) => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => enrollmentService.enroll(classId),
-    onSuccess: () => refreshEnrollmentData(queryClient, classId),
+    onSettled: () => refreshEnrollmentData(queryClient, classId),
   })
 }
 

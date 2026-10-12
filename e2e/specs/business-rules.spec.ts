@@ -1,12 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { AuthPage } from "../pages/AuthPage";
-import { seededClasses, seededUser } from "../support/test-data";
+import { seededClasses } from "../support/test-data";
+import { userAuthStatePath } from "../support/auth-state";
+
+test.use({ storageState: userAuthStatePath });
 
 test.describe("Booking business rules", () => {
-  test.beforeEach(async ({ page }) => {
-    await new AuthPage(page).login(seededUser);
-  });
-
   test("disables enrollment when a class is full", async ({ page }) => {
     await page.goto(`/classes/${seededClasses.full.id}`);
 

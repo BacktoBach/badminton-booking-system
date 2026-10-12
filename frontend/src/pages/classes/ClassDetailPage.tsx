@@ -94,7 +94,7 @@ export function ClassDetailPage() {
           </p>
           <h2 className="mt-2 text-2xl font-black">Giữ chỗ của bạn</h2>
           <div className="mt-5 rounded-xl bg-sky-50 p-5">
-            <strong>
+            <strong data-testid="class-capacity">
               {item.currentStudents}/{item.maxStudents} học viên
             </strong>
             <div className="mt-3 h-2 rounded-full bg-slate-200">
