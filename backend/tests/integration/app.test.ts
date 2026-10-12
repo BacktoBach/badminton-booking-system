@@ -8,6 +8,7 @@ vi.mock("../../src/database/pool.js", () => ({
 }));
 
 import { app } from "../../src/app.js";
+import { env } from "../../src/config/env.js";
 import { checkDatabaseConnection } from "../../src/database/pool.js";
 
 describe("application foundation", () => {
@@ -64,12 +65,13 @@ describe("application foundation", () => {
   });
 
   it("allows a configured browser origin with credentials", async () => {
+    const configuredOrigin = env.CLIENT_ORIGINS[0]!;
     const response = await request(app)
       .get("/api/health")
-      .set("Origin", "http://localhost:5173");
+      .set("Origin", configuredOrigin);
 
     expect(response.status).toBe(200);
-    expect(response.headers["access-control-allow-origin"]).toBe("http://localhost:5173");
+    expect(response.headers["access-control-allow-origin"]).toBe(configuredOrigin);
     expect(response.headers["access-control-allow-credentials"]).toBe("true");
   });
 
