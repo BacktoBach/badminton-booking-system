@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ClassForm, buildClassUpdateInput } from '../../../src/components/classes/ClassForm'
+import { businessDateTimeInputToIso } from '../../../src/utils/date'
 
 const values = {
   title: 'Lớp cầu lông nâng cao',
@@ -12,6 +13,30 @@ const values = {
   schedule: 'Thứ 3 và Thứ 5',
   location: 'Sân số 2',
   maxStudents: 18,
+}
+
+async function pickNextMonthDate(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Ngày khai giảng (giờ VN)' }))
+  const currentMonth = screen.getByTestId('startDate-picker-month').getAttribute('data-month')!
+  const [year, month] = currentMonth.split('-').map(Number)
+  const nextMonth = new Date(Date.UTC(year, month, 1))
+  await user.click(screen.getByRole('button', { name: 'Tháng sau' }))
+  await user.click(
+    screen.getByRole('button', {
+      name: `Chọn ngày 1/${nextMonth.getMonth() + 1}/${nextMonth.getFullYear()}`,
+    }),
+  )
+  await user.selectOptions(screen.getByLabelText('Giờ'), '19')
+  await user.selectOptions(screen.getByLabelText('Phút'), '30')
+  await user.click(screen.getByRole('button', { name: 'Xong' }))
+  return `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01T19:30`
+}
+
+async function chooseSchedule(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Thứ 3' }))
+  await user.click(screen.getByRole('button', { name: 'Thứ 5' }))
+  await user.selectOptions(screen.getByLabelText('Giờ học'), '19')
+  await user.selectOptions(screen.getByLabelText('Phút học'), '30')
 }
 
 describe('buildClassUpdateInput', () => {
@@ -36,6 +61,28 @@ describe('buildClassUpdateInput', () => {
 })
 
 describe('ClassForm API errors', () => {
+  it('submits the selected Vietnam date and time as UTC', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(<ClassForm mode="create" pending={false} onSubmit={onSubmit} />)
+
+    await user.type(screen.getByLabelText('Tên lớp'), 'Lớp cơ bản')
+    await user.type(screen.getByLabelText('Mô tả'), 'Lớp dành cho người mới bắt đầu.')
+    await user.type(screen.getByLabelText('Huấn luyện viên'), 'Coach An')
+    const selectedDate = await pickNextMonthDate(user)
+    await chooseSchedule(user)
+    await user.type(screen.getByLabelText('Địa điểm'), 'Sân số 1')
+    await user.click(screen.getByRole('button', { name: 'Lưu lớp học' }))
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startDate: businessDateTimeInputToIso(selectedDate),
+        schedule: 'Thứ 3, Thứ 5 - 19:30',
+      }),
+      expect.any(Object),
+    )
+  })
+
   it('applies backend field errors from the mutation callback', async () => {
     const user = userEvent.setup()
     render(
@@ -66,10 +113,8 @@ describe('ClassForm API errors', () => {
     await user.type(screen.getByLabelText('Tên lớp'), 'Lớp cơ bản')
     await user.type(screen.getByLabelText('Mô tả'), 'Lớp dành cho người mới bắt đầu.')
     await user.type(screen.getByLabelText('Huấn luyện viên'), 'Coach An')
-    fireEvent.change(screen.getByLabelText('Ngày khai giảng (giờ VN)'), {
-      target: { value: '2035-01-01T19:30' },
-    })
-    await user.type(screen.getByLabelText('Lịch học'), 'Thứ 3 và Thứ 5')
+    await pickNextMonthDate(user)
+    await chooseSchedule(user)
     await user.type(screen.getByLabelText('Địa điểm'), 'Sân số 1')
     await user.click(screen.getByRole('button', { name: 'Lưu lớp học' }))
 
