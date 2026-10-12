@@ -118,6 +118,7 @@ test("admin cannot reduce capacity below current enrollment count", async ({
 test("admin class form validates required fields, past dates and capacity bounds", async ({
   page,
 }) => {
+  const admin = new AdminClassesPage(page);
   await page.goto("/admin/classes/new");
   await page.getByRole("button", { name: "Lưu lớp học" }).click();
   await expect(page.getByText("Tên lớp cần ít nhất 3 ký tự")).toBeVisible();
@@ -127,9 +128,9 @@ test("admin class form validates required fields, past dates and capacity bounds
   await page.getByLabel("Mô tả").fill("Mô tả hợp lệ dùng để kiểm tra form.");
   await page.getByLabel("Huấn luyện viên").fill("Coach Validation");
   await page.getByLabel("Trình độ").selectOption("beginner");
-  await page.getByLabel("Ngày khai giảng (giờ VN)").fill("2020-01-01T10:00");
+  await admin.setStartDate("2020-01-01T10:00");
   await page.getByLabel("Số học viên tối đa").fill("501");
-  await page.getByLabel("Lịch học").fill("Thứ 2 - 18:00");
+  await admin.setSchedule("Thứ 2 - 18:00");
   await page.getByLabel("Địa điểm").fill("Sân Validation");
   await page.getByRole("button", { name: "Lưu lớp học" }).click();
   await expect(
@@ -139,9 +140,7 @@ test("admin class form validates required fields, past dates and capacity bounds
     page.getByText("Số học viên tối đa không được vượt quá 500"),
   ).toBeVisible();
 
-  await page
-    .getByLabel("Ngày khai giảng (giờ VN)")
-    .fill(toFutureDateTimeLocal(30));
+  await admin.setStartDate(toFutureDateTimeLocal(30));
   await page.getByLabel("Số học viên tối đa").fill("0");
   await page.getByRole("button", { name: "Lưu lớp học" }).click();
   await expect(

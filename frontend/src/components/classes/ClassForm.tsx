@@ -1,7 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { Button } from '../ui/Button'
+import { DateTimePicker } from '../ui/DateTimePicker'
 import { InputField, SelectField, TextareaField } from '../ui/FormField'
+import { SchedulePicker } from '../ui/SchedulePicker'
 import { classEditFormSchema, classFormSchema } from '../../schemas/class.schema'
 import { classLevels, levelLabels, type ClassWriteInput } from '../../types/class.types'
 import type { AppApiError } from '../../types/api.types'
@@ -54,11 +56,14 @@ type ClassFormProps =
 export function ClassForm({ mode, initial, pending, onSubmit }: ClassFormProps) {
   const editing = mode === 'edit'
   const classStarted = editing && hasStarted(initial.startDate)
+  const initialStartDate = toBusinessDateTimeInput(initial?.startDate)
   const {
     register,
     handleSubmit,
     setError,
+    setValue,
     clearErrors,
+    control,
     formState: { dirtyFields, errors },
   } = useForm<FormValues>({
     resolver: zodResolver(editing ? classEditFormSchema : classFormSchema),
@@ -67,12 +72,23 @@ export function ClassForm({ mode, initial, pending, onSubmit }: ClassFormProps) 
       description: initial?.description ?? '',
       coachName: initial?.coachName ?? '',
       level: initial?.level ?? 'beginner',
-      startDate: toBusinessDateTimeInput(initial?.startDate),
+      startDate: initialStartDate,
       schedule: initial?.schedule ?? '',
       location: initial?.location ?? '',
       maxStudents: initial?.maxStudents ?? 12,
     },
   })
+  const selectedStartDate = useWatch({ control, name: 'startDate' }) ?? ''
+  const selectedSchedule = useWatch({ control, name: 'schedule' }) ?? ''
+  const updateStartDate = (value: string) => {
+    setValue('startDate', value, {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
+  }
+  const updateSchedule = (value: string) => {
+    setValue('schedule', value, { shouldDirty: true, shouldValidate: true })
+  }
   const handleApiError: ClassFormErrorHandler = (error) =>
     applyApiFieldErrors(error, setError, [
       'title',
@@ -159,16 +175,27 @@ export function ClassForm({ mode, initial, pending, onSubmit }: ClassFormProps) 
       </section>
       <section className="grid gap-5 rounded-2xl border bg-white p-6 sm:grid-cols-2">
         <h2 className="sm:col-span-2 text-xl font-black">Lịch và sức chứa</h2>
-        <InputField
-          label="Ngày khai giảng (giờ VN)"
-          fieldId="startDate"
-          type="datetime-local"
-          readOnly={classStarted}
-          aria-readonly={classStarted}
-          hint={classStarted ? 'Không thể đổi ngày khai giảng của lớp đã bắt đầu.' : undefined}
-          error={errors.startDate?.message}
-          {...register('startDate')}
-        />
+        <div>
+          <span id="startDate-label" className="block text-sm font-semibold text-slate-800">
+            Ngày khai giảng (giờ VN)
+          </span>
+          <input type="hidden" {...register('startDate')} />
+          <div className="mt-2">
+            <DateTimePicker
+              id="startDate-picker"
+              labelId="startDate-label"
+              value={selectedStartDate}
+              onChange={updateStartDate}
+              disabled={classStarted}
+              error={errors.startDate?.message}
+            />
+          </div>
+          {classStarted && (
+            <p className="mt-1 text-xs text-slate-500">
+              Không thể đổi ngày khai giảng của lớp đã bắt đầu.
+            </p>
+          )}
+        </div>
         <InputField
           label="Số học viên tối đa"
           fieldId="maxStudents"
@@ -178,13 +205,14 @@ export function ClassForm({ mode, initial, pending, onSubmit }: ClassFormProps) 
           error={errors.maxStudents?.message}
           {...register('maxStudents', { valueAsNumber: true })}
         />
-        <InputField
-          label="Lịch học"
-          fieldId="schedule"
-          maxLength={255}
-          error={errors.schedule?.message}
-          {...register('schedule')}
-        />
+        <div>
+          <input type="hidden" {...register('schedule')} />
+          <SchedulePicker
+            value={selectedSchedule}
+            onChange={updateSchedule}
+            error={errors.schedule?.message}
+          />
+        </div>
         <InputField
           label="Địa điểm"
           fieldId="location"
