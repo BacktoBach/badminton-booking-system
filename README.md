@@ -4,11 +4,12 @@
 
 ## Liên kết
 
-| Môi trường         | URL                                                                                                                    |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Backend production | [badminton-booking-system-0xi7.onrender.com](https://badminton-booking-system-0xi7.onrender.com)                       |
-| Health check       | [badminton-booking-system-0xi7.onrender.com/api/health](https://badminton-booking-system-0xi7.onrender.com/api/health) |
-| Swagger UI         | [badminton-booking-system-0xi7.onrender.com/api/docs/](https://badminton-booking-system-0xi7.onrender.com/api/docs/)   |
+| Môi trường          | URL                                                                                                                    |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Backend production  | [badminton-booking-system-0xi7.onrender.com](https://badminton-booking-system-0xi7.onrender.com)                       |
+| Frontend production | [badminton-booking-system-frontend.vercel.app](https://badminton-booking-system-frontend.vercel.app)                   |
+| Health check        | [badminton-booking-system-0xi7.onrender.com/api/health](https://badminton-booking-system-0xi7.onrender.com/api/health) |
+| Swagger UI          | [badminton-booking-system-0xi7.onrender.com/api/docs/](https://badminton-booking-system-0xi7.onrender.com/api/docs/)   |
 
 Production đã được kiểm tra với Render PostgreSQL: health check, public class list và Postman authentication đều hoạt động.
 
@@ -192,6 +193,12 @@ Kiểm tra frontend trước khi commit:
 ```powershell
 npm run verify:client
 ```
+
+### Cài ứng dụng PWA
+
+Bản build frontend có manifest, icon cho desktop/Android/iOS và service worker. Sau khi deploy phiên bản này, trên Chrome hoặc Edge, mở website qua HTTPS rồi chọn **Cài đặt ứng dụng** trên thanh địa chỉ; trên iPhone/iPad, dùng **Chia sẻ → Thêm vào Màn hình chính**. Chế độ `npm run dev:client` không bật service worker; để kiểm tra PWA local, chạy `npm run build:client` rồi `npm run preview --workspace frontend`.
+
+PWA chỉ lưu sẵn giao diện tĩnh để có thể mở ứng dụng khi mất mạng. Danh sách lớp, phiên đăng nhập, học viên và thao tác đăng ký luôn cần API; phản hồi `/api/*` không được lưu trong service worker cache. Khi có phiên bản mới, ứng dụng hiện nút cập nhật để người dùng tự tải lại sau khi lưu form đang nhập.
 
 ### Chạy E2E tests
 
