@@ -1,6 +1,7 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import { AppErrorBoundary } from './components/feedback/AppErrorBoundary'
+import { PwaUpdatePrompt } from './components/feedback/PwaUpdatePrompt'
 import { SessionLifecycle } from './components/auth/SessionLifecycle'
 import { queryClient } from './config/query-client'
 import { ToastProvider } from './contexts/ToastContext'
@@ -11,6 +12,7 @@ export default function App() {
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
+          <PwaUpdatePrompt />
           <BrowserRouter>
             <SessionLifecycle />
             <AppRoutes />
