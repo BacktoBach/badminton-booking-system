@@ -23,6 +23,7 @@ export const classPaths = {
       responses: {
         "200": paginatedResponse("Upcoming classes", classRef),
         "400": { $ref: "#/components/responses/ValidationError" },
+        "429": { $ref: "#/components/responses/TooManyRequests" },
       },
     },
     post: {
@@ -48,6 +49,7 @@ export const classPaths = {
         "200": dataResponse("Class details", classRef),
         "400": { $ref: "#/components/responses/ValidationError" },
         "404": { $ref: "#/components/responses/ClassNotFound" },
+        "429": { $ref: "#/components/responses/TooManyRequests" },
       },
     },
     patch: {

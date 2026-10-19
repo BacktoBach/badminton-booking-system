@@ -145,8 +145,10 @@ Request/response đầy đủ nằm trong [API contract](backend/docs/API_CONTRA
 | `409` | `EMAIL_ALREADY_EXISTS`, `DUPLICATE_ENROLLMENT`, `CLASS_FULL`, `CLASS_ALREADY_STARTED` | Xung đột dữ liệu hoặc business rule                           |
 | `409` | `CAPACITY_BELOW_CURRENT_ENROLLMENTS`                                                  | Giảm capacity thấp hơn số học viên hiện tại                   |
 | `413` | `PAYLOAD_TOO_LARGE`                                                                   | JSON vượt giới hạn 10 KB                                      |
-| `429` | `TOO_MANY_REQUESTS`                                                                   | Vượt auth rate limit                                          |
+| `429` | `TOO_MANY_REQUESTS`                                                                   | Vượt giới hạn tần suất; xem header `Retry-After`              |
 | `503` | `DATABASE_UNAVAILABLE`                                                                | Health check không kết nối được PostgreSQL                    |
+
+Giới hạn theo từng nhóm: đăng ký/hủy lớp dùng chung mức 20 lần/10 phút cho mỗi tài khoản và 100 lần/10 phút cho mỗi IP; danh sách/chi tiết lớp công khai dùng chung mức 600 lần/5 phút cho mỗi IP. Login/register có giới hạn riêng. Bộ đếm hiện lưu trong bộ nhớ của từng tiến trình backend; nếu chạy nhiều replica, cần chuyển sang store dùng chung để giới hạn chính xác toàn hệ thống.
 
 ## Cài đặt local
 

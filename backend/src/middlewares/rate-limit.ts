@@ -12,7 +12,12 @@ export const createIpEmailRateLimitKey: RateLimitKeyGenerator = (request) => {
   return `${ipKey}:${emailKey}`;
 };
 
-export const createAuthRateLimiter = (options: {
+export const createIpUserRateLimitKey: RateLimitKeyGenerator = (request) => {
+  const ipKey = ipKeyGenerator(request.ip ?? request.socket.remoteAddress ?? "unknown");
+  return `${ipKey}:${request.user?.id ?? "anonymous"}`;
+};
+
+export const createRateLimiter = (options: {
   windowMs: number;
   limit: number;
   message: string;
@@ -32,27 +37,27 @@ export const createAuthRateLimiter = (options: {
   },
 });
 
-const registerIpLimiter = createAuthRateLimiter({
+const registerIpLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 25,
   message: "Too many registration attempts from this network; please try again later",
 });
 
-const registerEmailLimiter = createAuthRateLimiter({
+const registerEmailLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 5,
   keyGenerator: createIpEmailRateLimitKey,
   message: "Too many registration attempts; please try again later",
 });
 
-const loginIpLimiter = createAuthRateLimiter({
+const loginIpLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   limit: 100,
   skipSuccessfulRequests: true,
   message: "Too many failed sign-in attempts from this network; please try again later",
 });
 
-const loginEmailLimiter = createAuthRateLimiter({
+const loginEmailLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   limit: 10,
   skipSuccessfulRequests: true,
@@ -62,3 +67,24 @@ const loginEmailLimiter = createAuthRateLimiter({
 
 export const registerLimiters = [registerIpLimiter, registerEmailLimiter] as const;
 export const loginLimiters = [loginIpLimiter, loginEmailLimiter] as const;
+
+// These are shared across routes so switching classes or HTTP methods cannot reset the quota.
+export const enrollmentLimiters = [
+  createRateLimiter({
+    windowMs: 10 * 60 * 1000,
+    limit: 100,
+    message: "Too many enrollment requests from this network; please try again later",
+  }),
+  createRateLimiter({
+    windowMs: 10 * 60 * 1000,
+    limit: 20,
+    keyGenerator: createIpUserRateLimitKey,
+    message: "Too many enrollment requests; please try again later",
+  }),
+] as const;
+
+export const publicClassReadLimiter = createRateLimiter({
+  windowMs: 5 * 60 * 1000,
+  limit: 600,
+  message: "Too many class requests from this network; please try again later",
+});
