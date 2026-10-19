@@ -10,6 +10,7 @@ import {
 import { cancelEnrollment, enroll } from "../controllers/enrollment.controller.js";
 import { authenticate, optionalAuthenticate } from "../middlewares/authenticate.js";
 import { authorize } from "../middlewares/authorize.js";
+import { enrollmentLimiters, publicClassReadLimiter } from "../middlewares/rate-limit.js";
 import { validateParams, validateQuery } from "../middlewares/validate.js";
 import { validateBody } from "../middlewares/validate.js";
 import {
@@ -22,13 +23,21 @@ import {
 
 export const classRouter = Router();
 
-classRouter.get("/", validateQuery(classListQuerySchema), listClasses);
+classRouter.get("/", publicClassReadLimiter, validateQuery(classListQuerySchema), listClasses);
 classRouter.post("/", authenticate, authorize("admin"), validateBody(createClassSchema), createClass);
-classRouter.post("/:classId/enrollments", authenticate, authorize("user"), validateParams(classParamsSchema), enroll);
+classRouter.post(
+  "/:classId/enrollments",
+  authenticate,
+  authorize("user"),
+  ...enrollmentLimiters,
+  validateParams(classParamsSchema),
+  enroll,
+);
 classRouter.delete(
   "/:classId/enrollments",
   authenticate,
   authorize("user"),
+  ...enrollmentLimiters,
   validateParams(classParamsSchema),
   cancelEnrollment,
 );
@@ -49,4 +58,10 @@ classRouter.patch(
   updateClass,
 );
 classRouter.delete("/:classId", authenticate, authorize("admin"), validateParams(classParamsSchema), removeClass);
-classRouter.get("/:classId", optionalAuthenticate, validateParams(classParamsSchema), getClassDetail);
+classRouter.get(
+  "/:classId",
+  publicClassReadLimiter,
+  optionalAuthenticate,
+  validateParams(classParamsSchema),
+  getClassDetail,
+);

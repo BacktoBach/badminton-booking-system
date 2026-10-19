@@ -323,7 +323,13 @@ export const components = {
       },
     },
     TooManyRequests: {
-      description: "Authentication rate limit exceeded",
+      description: "Rate limit exceeded. Retry after the number of seconds in the Retry-After header.",
+      headers: {
+        "Retry-After": {
+          description: "Seconds until another request may be attempted",
+          schema: { type: "integer", minimum: 1 },
+        },
+      },
       content: {
         "application/json": {
           schema: { $ref: "#/components/schemas/ApiError" },

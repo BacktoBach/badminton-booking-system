@@ -10,7 +10,7 @@ import { authenticate } from "../../src/middlewares/authenticate.js";
 import { authorize } from "../../src/middlewares/authorize.js";
 import { errorHandler } from "../../src/middlewares/error-handler.js";
 import {
-  createAuthRateLimiter,
+  createRateLimiter,
   createIpEmailRateLimitKey,
 } from "../../src/middlewares/rate-limit.js";
 import { runMigrations } from "../../scripts/migrate.js";
@@ -208,7 +208,7 @@ describe("authentication rate limiter", () => {
     const limitedApp = express();
     limitedApp.post(
       "/login",
-      createAuthRateLimiter({ windowMs: 60_000, limit: 2, message: "Limited" }),
+      createRateLimiter({ windowMs: 60_000, limit: 2, message: "Limited" }),
       (_request, response) => response.status(401).end(),
     );
     await request(limitedApp).post("/login");
@@ -225,7 +225,7 @@ describe("authentication rate limiter", () => {
     limitedApp.use(express.json());
     limitedApp.post(
       "/login",
-      createAuthRateLimiter({
+      createRateLimiter({
         windowMs: 60_000,
         limit: 1,
         message: "Limited",

@@ -33,6 +33,7 @@ export const enrollmentPaths = {
             },
           },
         },
+        "429": { $ref: "#/components/responses/TooManyRequests" },
       },
     },
     delete: {
@@ -54,6 +55,7 @@ export const enrollmentPaths = {
           description: "The class has already started and the enrollment history is immutable",
           content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
         },
+        "429": { $ref: "#/components/responses/TooManyRequests" },
       },
     },
   },
