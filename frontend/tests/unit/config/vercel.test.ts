@@ -24,4 +24,12 @@ describe('Vercel security headers', () => {
     expect(policy).toContain("frame-ancestors 'none'")
     expect(policy).toContain("object-src 'none'")
   })
+
+  it('proxies same-origin API requests to the Railway backend before the SPA fallback', () => {
+    expect(vercelConfig.rewrites[0]).toEqual({
+      source: '/api/:path*',
+      destination: 'https://noble-luck-production-5799.up.railway.app/api/:path*',
+    })
+    expect(vercelConfig.rewrites[1]).toEqual({ source: '/(.*)', destination: '/index.html' })
+  })
 })
