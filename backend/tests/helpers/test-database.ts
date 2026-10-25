@@ -39,7 +39,7 @@ export const truncateTestData = async (databasePool: Pool): Promise<void> => {
   const client = await databasePool.connect();
   try {
     await assertTestDatabase(client);
-    await client.query("TRUNCATE TABLE enrollments, classes, users RESTART IDENTITY CASCADE");
+    await client.query("TRUNCATE TABLE sepay_events, enrollments, classes, users RESTART IDENTITY CASCADE");
   } finally {
     client.release();
   }

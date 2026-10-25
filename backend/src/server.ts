@@ -2,6 +2,7 @@ import type { Server } from "node:http";
 import { app } from "./app.js";
 import { env } from "./config/env.js";
 import { checkDatabaseConnection, closeDatabase } from "./database/pool.js";
+import { expirePendingPayments } from "./services/payment.service.js";
 
 const listen = (): Promise<Server> => new Promise((resolve, reject) => {
   const server = app.listen(env.PORT);
@@ -21,11 +22,21 @@ const listen = (): Promise<Server> => new Promise((resolve, reject) => {
 const startServer = async (): Promise<void> => {
   await checkDatabaseConnection();
   const server = await listen();
+  const expiryTimer = setInterval(() => {
+    void expirePendingPayments().catch((error: unknown) => {
+      console.error("Failed to expire pending payments", error);
+    });
+  }, 30_000);
+  expiryTimer.unref();
+  void expirePendingPayments().catch((error: unknown) => {
+    console.error("Failed to expire pending payments on startup", error);
+  });
 
   let shuttingDown = false;
   const shutdown = (signal: NodeJS.Signals): void => {
     if (shuttingDown) return;
     shuttingDown = true;
+    clearInterval(expiryTimer);
     console.log(`${signal} received, shutting down`);
 
     const forceExitTimer = setTimeout(() => {

@@ -1,4 +1,6 @@
 import { useParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { apiClient } from '../../config/axios'
 import {
   EmptyState,
   ErrorState,
@@ -15,6 +17,25 @@ import { readPositivePage, SEARCH_MAX_LENGTH } from '../../utils/search-params'
 
 export function StudentsPage() {
   const { classId = '' } = useParams()
+  const payments = useQuery({
+    queryKey: ['admin', 'class-payments', classId],
+    queryFn: async () =>
+      (
+        await apiClient.get<{
+          data: Array<{
+            userId: string
+            name: string
+            email: string
+            status: string
+            amountVnd: number
+            paymentCode: string | null
+            expiresAt: string | null
+            paidAt: string | null
+          }>
+        }>(`/admin/classes/${classId}/payments`)
+      ).data.data,
+    enabled: Boolean(classId),
+  })
   const { params, search, searchParam, setParams, setSearch } = useDebouncedSearchParam()
   const page = readPositivePage(params.get('page'))
   const query = useClassStudents(classId, { page, limit: 20, search: searchParam || undefined })
@@ -84,6 +105,46 @@ export function StudentsPage() {
           )}
         </UpdatingContent>
       </div>
+      {payments.data?.some((payment) => payment.amountVnd > 0) && (
+        <section className="mt-10">
+          <h2 className="text-2xl font-bold">Trạng thái thanh toán</h2>
+          {payments.isPending ? (
+            <LoadingState />
+          ) : payments.isError ? (
+            <ErrorState
+              message={getErrorMessage(payments.error)}
+              onRetry={() => payments.refetch()}
+            />
+          ) : payments.data.length === 0 ? (
+            <EmptyState title="Chưa có đăng ký" />
+          ) : (
+            <div className="mt-4 overflow-x-auto rounded-2xl border bg-white">
+              <table className="w-full text-left">
+                <thead className="border-b bg-slate-50">
+                  <tr>
+                    <th className="p-4">Học viên</th>
+                    <th>Email</th>
+                    <th>Học phí</th>
+                    <th>Trạng thái</th>
+                    <th>Mã chuyển khoản</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payments.data.map((payment) => (
+                    <tr key={payment.userId} className="border-b last:border-0">
+                      <td className="p-4 font-semibold">{payment.name}</td>
+                      <td>{payment.email}</td>
+                      <td>{payment.amountVnd.toLocaleString('vi-VN')} ₫</td>
+                      <td>{payment.status}</td>
+                      <td className="font-mono">{payment.paymentCode ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
     </>
   )
 }

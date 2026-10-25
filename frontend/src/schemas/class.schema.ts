@@ -38,6 +38,11 @@ const classBaseFormSchema = z.object({
     .int('Số học viên tối đa phải là số nguyên')
     .min(1, 'Số học viên tối đa phải từ 1 trở lên')
     .max(500, 'Số học viên tối đa không được vượt quá 500'),
+  tuitionVnd: z
+    .number({ error: 'Vui lòng nhập học phí' })
+    .int('Học phí phải là số nguyên')
+    .min(0, 'Học phí không được âm')
+    .max(2_000_000_000, 'Học phí quá lớn'),
 })
 
 export const classFormSchema = classBaseFormSchema.refine(

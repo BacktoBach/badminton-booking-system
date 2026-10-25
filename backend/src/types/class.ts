@@ -19,11 +19,14 @@ export type ClassWithCountRow = {
   schedule: string;
   location: string;
   max_students: number;
+  tuition_vnd: number;
   created_by_id: string;
   created_at: Date;
   updated_at: Date;
   current_students: number;
   is_enrolled?: boolean;
+  has_pending_payment?: boolean;
+  has_paid_tuition?: boolean;
 };
 
 export type PublicClass = {
@@ -37,9 +40,12 @@ export type PublicClass = {
   location: string;
   currentStudents: number;
   maxStudents: number;
+  tuitionVnd: number;
   availableSlots: number;
   isFull: boolean;
   isEnrolled?: boolean;
+  hasPendingPayment?: boolean;
+  hasPaidTuition?: boolean;
 };
 
 export type CreateClassInput = {
@@ -51,6 +57,7 @@ export type CreateClassInput = {
   schedule: string;
   location: string;
   maxStudents: number;
+  tuitionVnd?: number;
 };
 
 export type UpdateClassInput = Partial<CreateClassInput>;

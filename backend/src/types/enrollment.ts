@@ -12,6 +12,7 @@ export type LockedClassRow = {
   id: string;
   start_date: Date;
   max_students: number;
+  tuition_vnd: number;
 };
 
 export type EnrollmentClassRow = {
@@ -24,6 +25,7 @@ export type EnrollmentClassRow = {
   schedule: string;
   location: string;
   max_students: number;
+  tuition_vnd: number;
   created_by_id: string;
   created_at: Date;
   updated_at: Date;

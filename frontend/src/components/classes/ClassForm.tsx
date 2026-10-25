@@ -31,6 +31,7 @@ export const buildClassUpdateInput = (
   if (dirtyFields.schedule) input.schedule = values.schedule
   if (dirtyFields.location) input.location = values.location
   if (dirtyFields.maxStudents) input.maxStudents = Number(values.maxStudents)
+  if (dirtyFields.tuitionVnd) input.tuitionVnd = Number(values.tuitionVnd)
   return input
 }
 
@@ -76,6 +77,7 @@ export function ClassForm({ mode, initial, pending, onSubmit }: ClassFormProps) 
       schedule: initial?.schedule ?? '',
       location: initial?.location ?? '',
       maxStudents: initial?.maxStudents ?? 12,
+      tuitionVnd: initial?.tuitionVnd ?? 0,
     },
   })
   const selectedStartDate = useWatch({ control, name: 'startDate' }) ?? ''
@@ -99,6 +101,7 @@ export function ClassForm({ mode, initial, pending, onSubmit }: ClassFormProps) 
       'schedule',
       'location',
       'maxStudents',
+      'tuitionVnd',
     ])
 
   const submit = (values: FormValues) => {
@@ -109,6 +112,7 @@ export function ClassForm({ mode, initial, pending, onSubmit }: ClassFormProps) 
           ...values,
           startDate: businessDateTimeInputToIso(values.startDate),
           maxStudents: Number(values.maxStudents),
+          tuitionVnd: Number(values.tuitionVnd),
         },
         { handleApiError },
       )
@@ -204,6 +208,16 @@ export function ClassForm({ mode, initial, pending, onSubmit }: ClassFormProps) 
           max={500}
           error={errors.maxStudents?.message}
           {...register('maxStudents', { valueAsNumber: true })}
+        />
+        <InputField
+          label="Học phí (VND, 0 = miễn phí)"
+          fieldId="tuitionVnd"
+          type="number"
+          min={0}
+          max={2000000000}
+          step={1}
+          error={errors.tuitionVnd?.message}
+          {...register('tuitionVnd', { valueAsNumber: true })}
         />
         <div>
           <input type="hidden" {...register('schedule')} />

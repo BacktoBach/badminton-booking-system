@@ -31,6 +31,7 @@ export const E2E_RACE_USERS = [
 
 export const E2E_CLASS_IDS = {
   booking: "30000000-0000-4000-8000-000000000001",
+  paid: "30000000-0000-4000-8000-000000000107",
   full: "30000000-0000-4000-8000-000000000002",
   past: "30000000-0000-4000-8000-000000000003",
   capacity: "30000000-0000-4000-8000-000000000101",
@@ -43,6 +44,7 @@ export const E2E_CLASS_IDS = {
 
 export const E2E_CLASS_TITLES = {
   booking: "E2E Booking Fundamentals",
+  paid: "E2E Paid Fundamentals",
   full: "E2E Full Capacity",
   past: "E2E Past Enrollment",
   capacity: "E2E Capacity Guard",
@@ -77,6 +79,18 @@ const paginationClasses = Array.from({ length: 8 }, (_, index) => ({
 }));
 
 export const E2E_CLASS_FIXTURES = [
+  {
+    id: E2E_CLASS_IDS.paid,
+    title: E2E_CLASS_TITLES.paid,
+    description: "Lớp có học phí để kiểm thử giữ chỗ và xác nhận thanh toán.",
+    coachName: "Coach Paid",
+    level: "beginner",
+    daysFromNow: 11,
+    schedule: "Thứ 4 - 19:00",
+    location: "Sân E2E Paid",
+    maxStudents: 4,
+    tuitionVnd: 120000,
+  },
   {
     id: E2E_CLASS_IDS.booking,
     title: E2E_CLASS_TITLES.booking,

@@ -5,6 +5,7 @@ import { classRouter } from "./class.routes.js";
 import { adminRouter } from "./admin.routes.js";
 import { enrollmentRouter } from "./enrollment.routes.js";
 import { swaggerRouter } from "./swagger.routes.js";
+import { paymentRouter } from "./payment.routes.js";
 
 export const apiRouter = Router();
 
@@ -14,3 +15,4 @@ apiRouter.use("/auth", authRouter);
 apiRouter.use("/classes", classRouter);
 apiRouter.use("/admin", adminRouter);
 apiRouter.use("/enrollments", enrollmentRouter);
+apiRouter.use("/payments", paymentRouter);

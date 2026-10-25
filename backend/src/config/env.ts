@@ -12,6 +12,9 @@ const databaseUrl = z
     message: "must be a PostgreSQL connection URL",
   });
 
+const optionalSePayValue = (minimum: number) =>
+  z.preprocess((value) => value === "" ? undefined : value, z.string().min(minimum).optional());
+
 const clientOrigins = z.string().default("http://localhost:5173").transform((value, context) => {
   const origins = value
     .split(",")
@@ -53,8 +56,18 @@ const envSchema = z
     JWT_EXPIRES_IN: z.literal("1d").default("1d"),
     CLIENT_ORIGINS: clientOrigins,
     TRUST_PROXY: booleanString.default(false),
+    SEPAY_ENABLED: booleanString.default(false),
+    SEPAY_WEBHOOK_SECRET: optionalSePayValue(32),
+    SEPAY_BANK_CODE: optionalSePayValue(2),
+    SEPAY_ACCOUNT_NUMBER: optionalSePayValue(4),
+    SEPAY_ACCOUNT_NAME: optionalSePayValue(2),
   })
   .superRefine((value, context) => {
+    if (value.SEPAY_ENABLED) {
+      for (const field of ["SEPAY_WEBHOOK_SECRET", "SEPAY_BANK_CODE", "SEPAY_ACCOUNT_NUMBER", "SEPAY_ACCOUNT_NAME"] as const) {
+        if (!value[field]) context.addIssue({ code: "custom", path: [field], message: "required when SEPAY_ENABLED=true" });
+      }
+    }
     if (value.NODE_ENV === "production") {
       for (const origin of value.CLIENT_ORIGINS) {
         if (!origin.startsWith("https://")) {

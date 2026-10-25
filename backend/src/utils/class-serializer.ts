@@ -13,8 +13,11 @@ export const toPublicClass = (record: ClassWithCountRow, isEnrolled?: boolean): 
     location: record.location,
     currentStudents: record.current_students,
     maxStudents: record.max_students,
+    tuitionVnd: record.tuition_vnd,
     availableSlots,
     isFull: availableSlots === 0,
     ...(isEnrolled === undefined ? {} : { isEnrolled }),
+    ...(record.has_pending_payment === undefined ? {} : { hasPendingPayment: record.has_pending_payment }),
+    ...(record.has_paid_tuition === undefined ? {} : { hasPaidTuition: record.has_paid_tuition }),
   };
 };

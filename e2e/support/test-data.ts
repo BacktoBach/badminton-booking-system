@@ -14,6 +14,7 @@ export const raceUsers = E2E_RACE_USERS;
 
 export const seededClasses = {
   booking: { id: E2E_CLASS_IDS.booking, title: E2E_CLASS_TITLES.booking },
+  paid: { id: E2E_CLASS_IDS.paid, title: E2E_CLASS_TITLES.paid },
   full: { id: E2E_CLASS_IDS.full, title: E2E_CLASS_TITLES.full },
   past: { id: E2E_CLASS_IDS.past, title: E2E_CLASS_TITLES.past },
   capacity: { id: E2E_CLASS_IDS.capacity, title: E2E_CLASS_TITLES.capacity },
