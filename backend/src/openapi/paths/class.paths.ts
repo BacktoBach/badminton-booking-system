@@ -73,7 +73,7 @@ export const classPaths = {
     delete: {
       tags: ["Classes"],
       summary: "Delete a class",
-      description: "Admin only. Related enrollments are deleted by the database cascade.",
+      description: "Admin only. Classes with payment history cannot be deleted.",
       operationId: "deleteClass",
       security: [{ cookieAuth: [] }],
       parameters: [{ $ref: "#/components/parameters/ClassId" }],
@@ -81,6 +81,7 @@ export const classPaths = {
         "204": { description: "Class deleted" },
         ...protectedErrors,
         "404": { $ref: "#/components/responses/ClassNotFound" },
+        "409": { description: "Class has payment history" },
       },
     },
   },

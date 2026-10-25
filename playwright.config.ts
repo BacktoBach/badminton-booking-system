@@ -29,6 +29,11 @@ const backendEnvironment = {
   JWT_EXPIRES_IN: "1d",
   CLIENT_ORIGINS: frontendUrl,
   TRUST_PROXY: "false",
+  SEPAY_ENABLED: "true",
+  SEPAY_WEBHOOK_SECRET: "e2e-only-sepay-webhook-secret-32-characters",
+  SEPAY_BANK_CODE: "TEST",
+  SEPAY_ACCOUNT_NUMBER: "0000000000",
+  SEPAY_ACCOUNT_NAME: "E2E PAYMENT RECEIVER",
 };
 
 export default defineConfig({

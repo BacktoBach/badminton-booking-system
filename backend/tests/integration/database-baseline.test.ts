@@ -84,7 +84,7 @@ describe("database baseline", () => {
     const migrationResult = await databasePool.query<{ count: number }>(
       "SELECT COUNT(*)::INTEGER AS count FROM schema_migrations",
     );
-    expect(migrationResult.rows[0]?.count).toBe(1);
+    expect(migrationResult.rows[0]?.count).toBe(3);
 
     const tableResult = await databasePool.query<{ table_name: string }>(`
       SELECT table_name
@@ -96,6 +96,7 @@ describe("database baseline", () => {
       "classes",
       "enrollments",
       "schema_migrations",
+      "sepay_events",
       "users",
     ]);
   });

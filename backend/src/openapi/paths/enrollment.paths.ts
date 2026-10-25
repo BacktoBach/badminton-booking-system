@@ -13,12 +13,12 @@ export const enrollmentPaths = {
     post: {
       tags: ["Enrollments"],
       summary: "Enroll in a class",
-      description: "User only. A transaction, row lock, unique key, and database trigger protect against duplicate or over-capacity enrollment.",
+      description: "User only. Free classes enroll immediately; paid classes create a 15-minute pending hold and return payment metadata. A transaction, row lock, unique key, and database trigger protect capacity.",
       operationId: "enrollInClass",
       security: [{ cookieAuth: [] }],
       parameters: [{ $ref: "#/components/parameters/ClassId" }],
       responses: {
-        "201": dataResponse("Enrollment created; class capacity is updated", classRef),
+        "201": dataResponse("Free enrollment or pending paid hold created; class capacity is updated", classRef),
         ...commonErrors,
         "409": {
           description: "Duplicate enrollment, full class, or class already started",
@@ -34,6 +34,7 @@ export const enrollmentPaths = {
           },
         },
         "429": { $ref: "#/components/responses/TooManyRequests" },
+        "503": { description: "Paid enrollment is disabled until SePay is configured" },
       },
     },
     delete: {
@@ -52,7 +53,7 @@ export const enrollmentPaths = {
           content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
         },
         "409": {
-          description: "The class has already started and the enrollment history is immutable",
+          description: "Class already started or paid enrollment requires manual refund review",
           content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
         },
         "429": { $ref: "#/components/responses/TooManyRequests" },

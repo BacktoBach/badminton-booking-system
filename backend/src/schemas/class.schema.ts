@@ -27,6 +27,7 @@ const startDateSchema = z.iso.datetime({ offset: true }).refine(
 const scheduleSchema = z.string().trim().min(3).max(255);
 const locationSchema = z.string().trim().min(3).max(255);
 const maxStudentsSchema = z.coerce.number().int().min(1).max(500);
+const tuitionSchema = z.number().int().min(0).max(2_000_000_000);
 
 export const createClassSchema = z
   .object({
@@ -38,6 +39,7 @@ export const createClassSchema = z
     schedule: scheduleSchema,
     location: locationSchema,
     maxStudents: maxStudentsSchema,
+    tuitionVnd: tuitionSchema.optional(),
   })
   .strict();
 
@@ -51,6 +53,7 @@ export const updateClassSchema = z
     schedule: scheduleSchema.optional(),
     location: locationSchema.optional(),
     maxStudents: maxStudentsSchema.optional(),
+    tuitionVnd: tuitionSchema.optional(),
   })
   .strict()
   .refine((value) => Object.keys(value).length > 0, "At least one field is required");

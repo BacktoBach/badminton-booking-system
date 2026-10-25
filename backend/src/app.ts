@@ -8,6 +8,7 @@ import { errorHandler } from "./middlewares/error-handler.js";
 import { notFound } from "./middlewares/not-found.js";
 import { validateOrigin } from "./middlewares/validate-origin.js";
 import { apiRouter } from "./routes/index.js";
+import { webhookRouter } from "./routes/payment.routes.js";
 
 export const app = express();
 
@@ -18,6 +19,7 @@ if (env.TRUST_PROXY) {
 
 app.use(helmet());
 app.use(cors(corsOptionsDelegate));
+app.use("/api/payments/webhooks", webhookRouter);
 app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
 app.use(validateOrigin);

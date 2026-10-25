@@ -80,9 +80,17 @@ export const updateAdminClass = async (classId: string, input: UpdateClassInput)
 };
 
 export const deleteAdminClass = async (classId: string): Promise<void> => {
-  if (!(await deleteClass(pool, classId))) {
-    throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
-  }
+  await withTransaction(async (client) => {
+    const classRecord = await client.query("SELECT id FROM classes WHERE id = $1 FOR UPDATE", [classId]);
+    if (!classRecord.rowCount) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
+    const history = await client.query(
+      "SELECT 1 FROM enrollments WHERE class_id = $1 AND amount_vnd > 0 LIMIT 1", [classId],
+    );
+    if (history.rowCount) {
+      throw new AppError(409, "CLASS_HAS_PAYMENT_HISTORY", "Classes with payment history cannot be deleted");
+    }
+    await deleteClass(client, classId);
+  });
 };
 
 export const getClassStudents = async (classId: string, query: StudentListQuery) => {

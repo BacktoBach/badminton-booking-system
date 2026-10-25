@@ -46,8 +46,8 @@ export const seedE2eDatabase = async (client: PoolClient): Promise<void> => {
     await client.query(
       `INSERT INTO classes (
          id, title, description, coach_name, level, start_date,
-         schedule, location, max_students, created_by_id
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+         schedule, location, max_students, created_by_id, tuition_vnd
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
         fixture.id,
         fixture.title,
@@ -59,6 +59,7 @@ export const seedE2eDatabase = async (client: PoolClient): Promise<void> => {
         fixture.location,
         fixture.maxStudents,
         adminId,
+        "tuitionVnd" in fixture ? fixture.tuitionVnd : 0,
       ],
     );
   }

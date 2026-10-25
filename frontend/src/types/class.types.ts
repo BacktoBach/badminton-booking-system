@@ -17,9 +17,12 @@ export type BadmintonClass = {
   location: string
   currentStudents: number
   maxStudents: number
+  tuitionVnd: number
   availableSlots: number
   isFull: boolean
   isEnrolled?: boolean
+  hasPendingPayment?: boolean
+  hasPaidTuition?: boolean
 }
 
 export type ClassListParams = {
@@ -39,6 +42,7 @@ export type ClassWriteInput = Pick<
   | 'schedule'
   | 'location'
   | 'maxStudents'
+  | 'tuitionVnd'
 >
 
 export type Student = { id: string; name: string; email: string; enrolledAt: string }

@@ -40,7 +40,11 @@ export function ClassDetailPage() {
       return
     }
     enroll.mutate(undefined, {
-      onSuccess: () => showToast('Bạn đã đăng ký lớp học.'),
+      onSuccess: (result) => {
+        if (result.payment) {
+          navigate(`/payments/${classId}`)
+        } else showToast('Bạn đã đăng ký lớp học.')
+      },
       onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }),
     })
   }
@@ -58,6 +62,11 @@ export function ClassDetailPage() {
           {levelLabels[item.level]}
         </span>
         <h1 className="mt-5 text-3xl font-black sm:text-4xl">{item.title}</h1>
+        <p className="mt-2 font-semibold text-emerald-700">
+          {item.tuitionVnd === 0
+            ? 'Miễn phí'
+            : `Học phí: ${item.tuitionVnd.toLocaleString('vi-VN')} ₫`}
+        </p>
         <p className="mt-4 whitespace-pre-wrap text-slate-600">{item.description}</p>
         <div className="mt-8 grid gap-5 border-y py-7 sm:grid-cols-2">
           <p className="flex gap-3">
@@ -95,7 +104,8 @@ export function ClassDetailPage() {
           <h2 className="mt-2 text-2xl font-black">Giữ chỗ của bạn</h2>
           <div className="mt-5 rounded-xl bg-sky-50 p-5">
             <strong data-testid="class-capacity">
-              {item.currentStudents}/{item.maxStudents} học viên
+              {item.currentStudents}/{item.maxStudents}{' '}
+              {item.tuitionVnd > 0 ? 'chỗ đã đăng ký hoặc giữ' : 'học viên'}
             </strong>
             <div className="mt-3 h-2 rounded-full bg-slate-200">
               <div
@@ -111,6 +121,18 @@ export function ClassDetailPage() {
             <Link className="mt-5 block text-center font-bold text-emerald-700" to="/admin/classes">
               Quản lý lớp
             </Link>
+          ) : item.hasPendingPayment && isUser ? (
+            <Link
+              className="mt-5 block rounded-xl bg-emerald-700 p-3 text-center font-semibold text-white"
+              to={`/payments/${classId}`}
+            >
+              Tiếp tục thanh toán
+            </Link>
+          ) : item.isEnrolled && isUser && item.hasPaidTuition ? (
+            <p className="mt-5 text-sm text-slate-600">
+              Bạn đã thanh toán và ghi danh. Nếu cần hủy, hãy liên hệ quản trị viên để đối soát học
+              phí.
+            </p>
           ) : item.isEnrolled && isUser ? (
             <Button
               className="mt-5 w-full"

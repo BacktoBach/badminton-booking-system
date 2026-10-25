@@ -10,6 +10,7 @@ import type {
 
 type CountRow = { total: number };
 type ClassStartDateRow = { start_date: Date };
+const activeEnrollment = "(e.payment_status = 'paid' OR (e.payment_status = 'pending' AND e.payment_expires_at > NOW()))";
 
 const escapeLikePattern = (value: string): string =>
   value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
@@ -44,11 +45,11 @@ export const listUpcomingClasses = async (
       `
         SELECT
           c.id, c.title, c.description, c.coach_name, c.level, c.start_date,
-          c.schedule, c.location, c.max_students, c.created_by_id,
+          c.schedule, c.location, c.max_students, c.tuition_vnd, c.created_by_id,
           c.created_at, c.updated_at,
           COUNT(e.user_id)::INTEGER AS current_students
         FROM classes c
-        LEFT JOIN enrollments e ON e.class_id = c.id
+        LEFT JOIN enrollments e ON e.class_id = c.id AND ${activeEnrollment}
         WHERE ${filter.where}
         GROUP BY c.id
         ORDER BY c.start_date ASC, c.id ASC
@@ -71,7 +72,7 @@ export const findPublicClassById = async (
     `
       SELECT
         c.id, c.title, c.description, c.coach_name, c.level, c.start_date,
-        c.schedule, c.location, c.max_students, c.created_by_id,
+        c.schedule, c.location, c.max_students, c.tuition_vnd, c.created_by_id,
         c.created_at, c.updated_at,
         COUNT(e.user_id)::INTEGER AS current_students,
         EXISTS (
@@ -79,9 +80,24 @@ export const findPublicClassById = async (
           FROM enrollments viewer_enrollment
           WHERE viewer_enrollment.class_id = c.id
             AND viewer_enrollment.user_id = $2::UUID
-        ) AS is_enrolled
+            AND viewer_enrollment.payment_status = 'paid'
+        ) AS is_enrolled,
+        EXISTS (
+          SELECT 1 FROM enrollments viewer_payment
+          WHERE viewer_payment.class_id = c.id
+            AND viewer_payment.user_id = $2::UUID
+            AND viewer_payment.payment_status = 'pending'
+            AND viewer_payment.payment_expires_at > NOW()
+        ) AS has_pending_payment,
+        EXISTS (
+          SELECT 1 FROM enrollments viewer_paid
+          WHERE viewer_paid.class_id = c.id
+            AND viewer_paid.user_id = $2::UUID
+            AND viewer_paid.payment_status = 'paid'
+            AND viewer_paid.amount_vnd > 0
+        ) AS has_paid_tuition
       FROM classes c
-      LEFT JOIN enrollments e ON e.class_id = c.id
+      LEFT JOIN enrollments e ON e.class_id = c.id AND ${activeEnrollment}
       WHERE c.id = $1
       GROUP BY c.id
     `,
@@ -111,10 +127,10 @@ export const listAdminClasses = async (
   const [classesResult, countResult] = await Promise.all([
     database.query<ClassWithCountRow>(
       `SELECT c.id, c.title, c.description, c.coach_name, c.level, c.start_date,
-              c.schedule, c.location, c.max_students, c.created_by_id,
+              c.schedule, c.location, c.max_students, c.tuition_vnd, c.created_by_id,
               c.created_at, c.updated_at, COUNT(e.user_id)::INTEGER AS current_students
        FROM classes c
-       LEFT JOIN enrollments e ON e.class_id = c.id
+       LEFT JOIN enrollments e ON e.class_id = c.id AND ${activeEnrollment}
        ${where}
        GROUP BY c.id
        ORDER BY c.start_date DESC, c.id ASC
@@ -132,8 +148,8 @@ export const createClass = async (
 ): Promise<ClassWithCountRow> => {
   const result = await database.query<ClassWithCountRow>(
     `INSERT INTO classes
-       (title, description, coach_name, level, start_date, schedule, location, max_students, created_by_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       (title, description, coach_name, level, start_date, schedule, location, max_students, tuition_vnd, created_by_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *, 0::INTEGER AS current_students`,
     [
       input.title,
@@ -144,6 +160,7 @@ export const createClass = async (
       input.schedule,
       input.location,
       input.maxStudents,
+      input.tuitionVnd ?? 0,
       input.createdById,
     ],
   );
@@ -176,6 +193,7 @@ export const updateClass = async (
     schedule: "schedule",
     location: "location",
     maxStudents: "max_students",
+    tuitionVnd: "tuition_vnd",
   };
   const entries = Object.entries(input) as [keyof CreateClassInput, unknown][];
   const assignments = entries.map(([field], index) => `${columnByField[field]} = $${index + 1}`);
@@ -184,7 +202,7 @@ export const updateClass = async (
     `UPDATE classes c
      SET ${assignments.join(", ")}
      WHERE c.id = $${values.length + 1}
-     RETURNING c.*, (SELECT COUNT(*)::INTEGER FROM enrollments e WHERE e.class_id = c.id) AS current_students`,
+     RETURNING c.*, (SELECT COUNT(*)::INTEGER FROM enrollments e WHERE e.class_id = c.id AND ${activeEnrollment}) AS current_students`,
     [...values, classId],
   );
   return result.rows[0] ?? null;
@@ -213,7 +231,7 @@ export const listClassStudents = async (
       `SELECT u.id, u.name, u.email, e.enrolled_at
        FROM enrollments e
        JOIN users u ON u.id = e.user_id
-       WHERE e.class_id = $1 ${searchCondition}
+       WHERE e.class_id = $1 AND e.payment_status = 'paid' ${searchCondition}
        ORDER BY e.enrolled_at ASC, u.id ASC
        LIMIT $${limitPosition} OFFSET $${offsetPosition}`,
       [...values, query.limit, (query.page - 1) * query.limit],
@@ -221,7 +239,7 @@ export const listClassStudents = async (
     database.query<CountRow>(
       `SELECT COUNT(*)::INTEGER AS total
        FROM enrollments e JOIN users u ON u.id = e.user_id
-       WHERE e.class_id = $1 ${searchCondition}`,
+       WHERE e.class_id = $1 AND e.payment_status = 'paid' ${searchCondition}`,
       values,
     ),
   ]);

@@ -141,6 +141,7 @@ export const components = {
         "location",
         "currentStudents",
         "maxStudents",
+        "tuitionVnd",
         "availableSlots",
         "isFull",
       ],
@@ -159,6 +160,7 @@ export const components = {
         location: { type: "string", example: "Sân cầu lông số 1" },
         currentStudents: { type: "integer", minimum: 0, example: 3 },
         maxStudents: { type: "integer", minimum: 1, maximum: 500, example: 12 },
+        tuitionVnd: { type: "integer", minimum: 0, example: 0, description: "Class fee in VND; zero is free" },
         availableSlots: { type: "integer", minimum: 0, example: 9 },
         isFull: { type: "boolean", example: false },
         isEnrolled: {
@@ -166,6 +168,7 @@ export const components = {
           description: "Present on class detail responses; true when the authenticated user is enrolled.",
           example: false,
         },
+        hasPendingPayment: { type: "boolean", description: "Present on class detail when the viewer has an active unpaid hold" },
       },
     },
     EnrolledClass: {
@@ -210,6 +213,7 @@ export const components = {
         schedule: { type: "string", minLength: 3, maxLength: 255 },
         location: { type: "string", minLength: 3, maxLength: 255 },
         maxStudents: { type: "integer", minimum: 1, maximum: 500 },
+        tuitionVnd: { type: "integer", minimum: 0, maximum: 2000000000, default: 0 },
       },
       example: {
         title: "Badminton Foundation",
@@ -240,6 +244,7 @@ export const components = {
         schedule: { type: "string", minLength: 3, maxLength: 255 },
         location: { type: "string", minLength: 3, maxLength: 255 },
         maxStudents: { type: "integer", minimum: 1, maximum: 500 },
+        tuitionVnd: { type: "integer", minimum: 0, maximum: 2000000000 },
       },
       example: { maxStudents: 16 },
     },

@@ -10,8 +10,11 @@ export const enrollmentService = {
     ).data
   },
   async enroll(classId: string) {
-    return (await apiClient.post<DataResponse<BadmintonClass>>(`/classes/${classId}/enrollments`))
-      .data.data
+    return (
+      await apiClient.post<
+        DataResponse<BadmintonClass & { payment?: { status: 'pending'; classId: string } }>
+      >(`/classes/${classId}/enrollments`)
+    ).data.data
   },
   async cancel(classId: string) {
     return (await apiClient.delete<DataResponse<BadmintonClass>>(`/classes/${classId}/enrollments`))

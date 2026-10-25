@@ -3,6 +3,7 @@ import { authPaths } from "./paths/auth.paths.js";
 import { classPaths } from "./paths/class.paths.js";
 import { enrollmentPaths } from "./paths/enrollment.paths.js";
 import { healthPaths } from "./paths/health.paths.js";
+import { paymentPaths } from "./paths/payment.paths.js";
 import { components } from "./components.js";
 
 export const openApiDocument = {
@@ -23,6 +24,7 @@ export const openApiDocument = {
     { name: "Classes", description: "Public catalog and admin class management" },
     { name: "Enrollments", description: "User enrollment workflows" },
     { name: "Admin", description: "Administrator-only views" },
+    { name: "Payments", description: "Bank-transfer payment state and SePay webhook" },
   ],
   paths: {
     ...healthPaths,
@@ -30,6 +32,7 @@ export const openApiDocument = {
     ...classPaths,
     ...enrollmentPaths,
     ...adminPaths,
+    ...paymentPaths,
   },
   components,
 } as const;

@@ -13,6 +13,7 @@ const values = {
   schedule: 'Thứ 3 và Thứ 5',
   location: 'Sân số 2',
   maxStudents: 18,
+  tuitionVnd: 0,
 }
 
 async function pickNextMonthDate(user: ReturnType<typeof userEvent.setup>) {

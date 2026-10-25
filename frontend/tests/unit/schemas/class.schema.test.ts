@@ -10,6 +10,7 @@ const validClass = {
   schedule: 'Thứ 3 và Thứ 5',
   location: 'Sân số 1',
   maxStudents: 12,
+  tuitionVnd: 0,
 }
 
 describe('class form schema', () => {

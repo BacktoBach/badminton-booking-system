@@ -52,6 +52,12 @@ export function AdminClassesPage() {
         <div>
           <p className="font-bold uppercase tracking-wider text-emerald-700">Admin workspace</p>
           <h1 className="mt-2 text-3xl font-black">Quản lý lớp học</h1>
+          <Link
+            to="/admin/payment-reviews"
+            className="mt-2 inline-block font-semibold text-emerald-700"
+          >
+            Giao dịch cần đối soát
+          </Link>
           <p className="mt-2 text-slate-500">
             Tạo lịch mới, cập nhật sức chứa và theo dõi học viên.
           </p>
