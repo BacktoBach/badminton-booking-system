@@ -44,3 +44,14 @@ export const useChangePassword = () =>
       publishAuthSessionEvent('password-changed')
     },
   })
+
+export const useForgotPassword = () => useMutation({ mutationFn: authService.forgotPassword })
+
+export const useResetPassword = () =>
+  useMutation({
+    mutationFn: authService.resetPassword,
+    onSuccess: () => {
+      clearAuthSession()
+      publishAuthSessionEvent('password-changed')
+    },
+  })

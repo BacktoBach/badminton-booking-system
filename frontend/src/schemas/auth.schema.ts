@@ -35,3 +35,17 @@ export const changePasswordSchema = z
     path: ['confirmNewPassword'],
     message: 'Mật khẩu xác nhận không khớp',
   })
+
+export const forgotPasswordSchema = z.object({
+  email: z.email('Email không hợp lệ').max(255),
+})
+
+export const resetPasswordSchema = z
+  .object({
+    newPassword,
+    confirmNewPassword: z.string().min(1, 'Vui lòng xác nhận mật khẩu mới'),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    path: ['confirmNewPassword'],
+    message: 'Mật khẩu xác nhận không khớp',
+  })

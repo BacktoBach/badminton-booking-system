@@ -68,6 +68,26 @@ const loginEmailLimiter = createRateLimiter({
 export const registerLimiters = [registerIpLimiter, registerEmailLimiter] as const;
 export const loginLimiters = [loginIpLimiter, loginEmailLimiter] as const;
 
+export const passwordResetLimiters = [
+  createRateLimiter({
+    windowMs: 15 * 60 * 1000,
+    limit: 20,
+    message: "Too many password reset requests from this network; please try again later",
+  }),
+  createRateLimiter({
+    windowMs: 15 * 60 * 1000,
+    limit: 3,
+    keyGenerator: createIpEmailRateLimitKey,
+    message: "Too many password reset requests; please try again later",
+  }),
+] as const;
+
+export const resetPasswordLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  message: "Too many password reset attempts from this network; please try again later",
+});
+
 // These are shared across routes so switching classes or HTTP methods cannot reset the quota.
 export const enrollmentLimiters = [
   createRateLimiter({

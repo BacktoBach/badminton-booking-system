@@ -73,6 +73,35 @@ export const authPaths = {
       responses: { "200": messageResponse("Sign out successful", "Sign out successful") },
     },
   },
+  "/api/auth/forgot-password": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Request a password reset email",
+      description: "Always returns the same response for known and unknown email addresses. The link expires after 20 minutes.",
+      operationId: "requestPasswordReset",
+      requestBody: jsonBody({ $ref: "#/components/schemas/ForgotPasswordRequest" }),
+      responses: {
+        "202": messageResponse("Request accepted", "If the email is registered, a reset link will be sent"),
+        "400": { $ref: "#/components/responses/ValidationError" },
+        "429": { $ref: "#/components/responses/TooManyRequests" },
+        "503": { description: "Password reset email is not configured" },
+      },
+    },
+  },
+  "/api/auth/reset-password": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Set a new password with a one-time email token",
+      description: "Invalidates all active sessions and all outstanding reset links for the account.",
+      operationId: "completePasswordReset",
+      requestBody: jsonBody({ $ref: "#/components/schemas/ResetPasswordRequest" }),
+      responses: {
+        "200": messageResponse("Password reset", "Password reset; please sign in again"),
+        "400": { $ref: "#/components/responses/ValidationError" },
+        "429": { $ref: "#/components/responses/TooManyRequests" },
+      },
+    },
+  },
   "/api/auth/me": {
     get: {
       tags: ["Authentication"],

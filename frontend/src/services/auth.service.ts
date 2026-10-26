@@ -4,8 +4,10 @@ import type { DataResponse } from '../types/api.types'
 import type {
   AuthSession,
   ChangePasswordInput,
+  ForgotPasswordInput,
   LoginInput,
   RegisterInput,
+  ResetPasswordInput,
   User,
 } from '../types/auth.types'
 
@@ -33,5 +35,11 @@ export const authService = {
   },
   async changePassword(input: ChangePasswordInput) {
     await apiClient.put('/auth/change-password', input)
+  },
+  async forgotPassword(input: ForgotPasswordInput) {
+    await apiClient.post('/auth/forgot-password', input)
+  },
+  async resetPassword(input: ResetPasswordInput) {
+    await apiClient.post('/auth/reset-password', input)
   },
 }

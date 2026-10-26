@@ -10,6 +10,9 @@ if (!process.env.TEST_DATABASE_URL) {
 process.env.DEVELOPMENT_DATABASE_URL_FOR_GUARD = process.env.DATABASE_URL;
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 process.env.NODE_ENV = "test";
+process.env.RESEND_API_KEY = "test-resend-key";
+process.env.MAIL_FROM = "ShuttleUp <no-reply@example.com>";
+process.env.PASSWORD_RESET_URL = "http://localhost:5173/reset-password";
 
 export default defineConfig({
   test: {

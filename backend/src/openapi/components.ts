@@ -128,6 +128,21 @@ export const components = {
         newPassword: { type: "string", format: "password", minLength: 8 },
       },
     },
+    ForgotPasswordRequest: {
+      type: "object",
+      additionalProperties: false,
+      required: ["email"],
+      properties: { email: { type: "string", format: "email" } },
+    },
+    ResetPasswordRequest: {
+      type: "object",
+      additionalProperties: false,
+      required: ["token", "newPassword"],
+      properties: {
+        token: { type: "string", pattern: "^[a-f0-9]{64}$" },
+        newPassword: { type: "string", format: "password", minLength: 8 },
+      },
+    },
     Class: {
       type: "object",
       required: [

@@ -3,7 +3,7 @@ import cookieParser from "cookie-parser";
 import express from "express";
 import request from "supertest";
 import type { Pool } from "pg";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { app } from "../../src/app.js";
 import { pool } from "../../src/database/pool.js";
 import { authenticate } from "../../src/middlewares/authenticate.js";
@@ -56,6 +56,8 @@ describe("authentication API", () => {
   beforeEach(async () => {
     await truncateTestData(pool);
   });
+
+  afterEach(() => vi.unstubAllGlobals());
 
   afterAll(async () => {
     await pool.end();
@@ -168,6 +170,76 @@ describe("authentication API", () => {
       email: "password@example.com",
       password: "NewPassword123",
     })).status).toBe(200);
+  });
+
+  it("sends a one-time reset link without revealing whether the email exists", async () => {
+    await insertUser(pool, { email: "reset@example.com", password: "OldPassword123" });
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const unknown = await request(app).post("/api/auth/forgot-password").send({ email: "missing@example.com" });
+    const known = await request(app).post("/api/auth/forgot-password").send({ email: "RESET@EXAMPLE.COM" });
+    expect(unknown.status).toBe(202);
+    expect(known.body).toEqual(unknown.body);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const email = JSON.parse(fetchMock.mock.calls[0]![1].body as string) as { text: string };
+    const token = email.text.match(/#token=([a-f0-9]{64})/)?.[1];
+    expect(token).toBeDefined();
+    const stored = await pool.query<{ token_hash: string }>("SELECT token_hash FROM password_reset_tokens");
+    expect(stored.rows).toHaveLength(1);
+    expect(stored.rows[0]?.token_hash).not.toBe(token);
+
+    const oldLogin = await request(app).post("/api/auth/login").send({
+      email: "reset@example.com", password: "OldPassword123",
+    });
+    const oldCookie = extractCookie(oldLogin);
+    const changed = await request(app).post("/api/auth/reset-password").send({
+      token, newPassword: "NewPassword123",
+    });
+    expect(changed.status).toBe(200);
+    expect(changed.headers["set-cookie"]?.[0]).toMatch(/^auth_session=;/);
+    expect((await request(app).get("/api/auth/me").set("Cookie", oldCookie)).body.error.code)
+      .toBe("TOKEN_REVOKED");
+    expect((await request(app).post("/api/auth/reset-password").send({
+      token, newPassword: "AnotherPassword123",
+    })).body.error.code).toBe("INVALID_RESET_TOKEN");
+    expect((await request(app).post("/api/auth/login").send({
+      email: "reset@example.com", password: "NewPassword123",
+    })).status).toBe(200);
+  });
+
+  it("rejects an expired reset link", async () => {
+    await insertUser(pool, { email: "expired@example.com", password: "OldPassword123" });
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+    await request(app).post("/api/auth/forgot-password").send({ email: "expired@example.com" });
+    const token = (JSON.parse(fetchMock.mock.calls[0]![1].body as string) as { text: string })
+      .text.match(/#token=([a-f0-9]{64})/)?.[1];
+    await pool.query("UPDATE password_reset_tokens SET expires_at = NOW() - INTERVAL '1 second'");
+    const response = await request(app).post("/api/auth/reset-password").send({
+      token, newPassword: "NewPassword123",
+    });
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe("INVALID_RESET_TOKEN");
+  });
+
+  it("keeps the public response neutral and removes a token when email delivery fails", async () => {
+    await insertUser(pool, { email: "mail-failure@example.com", password: "OldPassword123" });
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 403 }));
+
+    const response = await request(app).post("/api/auth/forgot-password").send({
+      email: "mail-failure@example.com",
+    });
+    expect(response.status).toBe(202);
+    await vi.waitFor(async () => {
+      const result = await pool.query<{ count: number }>(
+        "SELECT COUNT(*)::INTEGER AS count FROM password_reset_tokens",
+      );
+      expect(result.rows[0]?.count).toBe(0);
+    });
+    expect(log).toHaveBeenCalledWith("Password reset email delivery failed", expect.any(String));
   });
 
   it("always clears logout cookie and rejects an untrusted origin", async () => {
