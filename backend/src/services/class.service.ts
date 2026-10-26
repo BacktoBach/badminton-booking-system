@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { pool } from "../database/pool.js";
 import { AppError } from "../errors/app-error.js";
 import { hasPostgresConstraint } from "../database/postgres-error.js";
@@ -5,7 +6,6 @@ import { withTransaction } from "../database/transaction.js";
 import {
   createClass,
   deleteClass,
-  findClassStartDateForUpdate,
   findPublicClassById,
   listAdminClasses,
   listClassStudents,
@@ -22,6 +22,15 @@ import type {
 } from "../types/class.js";
 import { createPaginationMeta } from "../utils/pagination.js";
 import { toPublicClass } from "../utils/class-serializer.js";
+import { discardPendingReminders, enqueueClassChangeNotice } from "./email-outbox.service.js";
+
+type ClassNoticeRow = {
+  id: string;
+  title: string;
+  start_date: Date;
+  schedule: string;
+  location: string;
+};
 
 export const getUpcomingClasses = async (query: ClassListQuery) => {
   const result = await listUpcomingClasses(pool, query);
@@ -51,10 +60,14 @@ export const createAdminClass = async (input: CreateClassInput, adminId: string)
 export const updateAdminClass = async (classId: string, input: UpdateClassInput): Promise<PublicClass> => {
   try {
     return await withTransaction(async (client) => {
+      const previous = await client.query<ClassNoticeRow>(
+        "SELECT id, title, start_date, schedule, location FROM classes WHERE id = $1 FOR UPDATE",
+        [classId],
+      );
+      const before = previous.rows[0];
+      if (!before) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
       if (input.startDate !== undefined) {
-        const currentClass = await findClassStartDateForUpdate(client, classId);
-        if (!currentClass) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
-        if (currentClass.start_date.getTime() <= Date.now()) {
+        if (before.start_date.getTime() <= Date.now()) {
           throw new AppError(
             409,
             "CLASS_ALREADY_STARTED",
@@ -65,6 +78,17 @@ export const updateAdminClass = async (classId: string, input: UpdateClassInput)
 
       const record = await updateClass(client, classId, input);
       if (!record) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
+      if (before.start_date.getTime() !== record.start_date.getTime() ||
+          before.schedule !== record.schedule || before.location !== record.location) {
+        await discardPendingReminders(client, classId);
+        await enqueueClassChangeNotice(client, {
+          id: classId,
+          title: record.title,
+          startDate: record.start_date,
+          schedule: record.schedule,
+          location: record.location,
+        }, randomUUID(), false);
+      }
       return toPublicClass(record);
     });
   } catch (error) {
@@ -81,14 +105,26 @@ export const updateAdminClass = async (classId: string, input: UpdateClassInput)
 
 export const deleteAdminClass = async (classId: string): Promise<void> => {
   await withTransaction(async (client) => {
-    const classRecord = await client.query("SELECT id FROM classes WHERE id = $1 FOR UPDATE", [classId]);
-    if (!classRecord.rowCount) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
+    const classRecord = await client.query<ClassNoticeRow>(
+      "SELECT id, title, start_date, schedule, location FROM classes WHERE id = $1 FOR UPDATE",
+      [classId],
+    );
+    const details = classRecord.rows[0];
+    if (!details) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
     const history = await client.query(
       "SELECT 1 FROM enrollments WHERE class_id = $1 AND amount_vnd > 0 LIMIT 1", [classId],
     );
     if (history.rowCount) {
       throw new AppError(409, "CLASS_HAS_PAYMENT_HISTORY", "Classes with payment history cannot be deleted");
     }
+    await discardPendingReminders(client, classId);
+    await enqueueClassChangeNotice(client, {
+      id: details.id,
+      title: details.title,
+      startDate: details.start_date,
+      schedule: details.schedule,
+      location: details.location,
+    }, randomUUID(), true);
     await deleteClass(client, classId);
   });
 };

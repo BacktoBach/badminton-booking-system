@@ -137,6 +137,12 @@ describe("paid enrollment", () => {
       "SELECT 1 FROM sepay_events WHERE provider_event_id = 1001",
     );
     expect(events.rowCount).toBe(1);
+    const emails = await pool.query<{ event_key: string }>(
+      "SELECT event_key FROM email_outbox ORDER BY event_key",
+    );
+    expect(emails.rows).toHaveLength(2);
+    expect(emails.rows.some((row) => row.event_key === `payment:paid:${code}`)).toBe(true);
+    expect(emails.rows.some((row) => row.event_key.startsWith("enrollment:"))).toBe(true);
   });
 
   it("accepts SePay's signed sample event with transaction id zero without enrolling anyone", async () => {
@@ -196,6 +202,11 @@ describe("paid enrollment", () => {
       [classId, userId],
     );
     expect(stored.rows[0]?.payment_status).toBe("needs_review");
+    const emails = await pool.query<{ event_key: string }>("SELECT event_key FROM email_outbox ORDER BY event_key");
+    expect(emails.rows.map((row) => row.event_key)).toEqual([
+      `payment:expired:${code}`,
+      `payment:needs_review:${code}`,
+    ]);
   });
 
   it("does not confirm a wrong amount and records it for review", async () => {
@@ -224,6 +235,8 @@ describe("paid enrollment", () => {
       "SELECT outcome FROM sepay_events WHERE provider_event_id = 1003",
     );
     expect(review.rows[0]?.outcome).toBe("amount_mismatch");
+    const emails = await pool.query<{ event_key: string }>("SELECT event_key FROM email_outbox");
+    expect(emails.rows.map((row) => row.event_key)).toEqual([`payment:needs_review:${code}`]);
   });
 
   it("rejects an unsigned webhook without storing or applying it", async () => {

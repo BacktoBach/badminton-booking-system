@@ -84,7 +84,7 @@ describe("database baseline", () => {
     const migrationResult = await databasePool.query<{ count: number }>(
       "SELECT COUNT(*)::INTEGER AS count FROM schema_migrations",
     );
-    expect(migrationResult.rows[0]?.count).toBe(4);
+    expect(migrationResult.rows[0]?.count).toBe(5);
 
     const tableResult = await databasePool.query<{ table_name: string }>(`
       SELECT table_name
@@ -94,6 +94,7 @@ describe("database baseline", () => {
     `);
     expect(tableResult.rows.map((row) => row.table_name)).toEqual([
       "classes",
+      "email_outbox",
       "enrollments",
       "password_reset_tokens",
       "schema_migrations",
@@ -110,6 +111,7 @@ describe("database baseline", () => {
         "002_class_tuition.sql",
         "003_enrollment_payments.sql",
         "004_password_reset.sql",
+        "005_email_outbox.sql",
       ]) {
         const source = await readFile(resolve("database/migrations", filename), "utf8");
         await writeFile(join(temporaryDirectory, filename), source.replace(/\r\n/g, "\n"));
