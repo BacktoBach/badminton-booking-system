@@ -139,6 +139,24 @@ describe("paid enrollment", () => {
     expect(events.rowCount).toBe(1);
   });
 
+  it("accepts SePay's signed sample event with transaction id zero without enrolling anyone", async () => {
+    const response = await sendWebhook({
+      id: 0,
+      accountNumber: "1234567890",
+      transferType: "in",
+      transferAmount: 10000,
+      code: null,
+      content: "SePay sample transfer",
+      referenceCode: "SAMPLE",
+    });
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ success: true });
+    const event = await pool.query<{ outcome: string }>(
+      "SELECT outcome FROM sepay_events WHERE provider_event_id = 0",
+    );
+    expect(event.rows[0]?.outcome).toBe("unmatched");
+  });
+
   it("releases an expired hold and keeps a late transfer for manual review", async () => {
     const enrolled = await request(app)
       .post(`/api/classes/${classId}/enrollments`)
