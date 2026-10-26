@@ -4,6 +4,7 @@ import { env } from "../config/env.js";
 import { pool } from "../database/pool.js";
 import { withTransaction } from "../database/transaction.js";
 import { AppError } from "../errors/app-error.js";
+import { enqueueEnrollmentConfirmation, enqueuePaymentNotice } from "./email-outbox.service.js";
 
 export const PAYMENT_TTL_MINUTES = 15;
 
@@ -42,11 +43,23 @@ export const paymentReceiver = () => {
 };
 
 export const expirePendingPayments = async (): Promise<number> => {
-  const result = await pool.query(
-    `UPDATE enrollments SET payment_status = 'expired'
-     WHERE payment_status = 'pending' AND payment_expires_at <= NOW()`,
-  );
-  return result.rowCount ?? 0;
+  return withTransaction(async (client) => {
+    const result = await client.query<{
+      class_id: string;
+      user_id: string;
+      payment_code: string | null;
+    }>(
+      `UPDATE enrollments SET payment_status = 'expired'
+       WHERE payment_status = 'pending' AND payment_expires_at <= NOW()
+       RETURNING class_id, user_id, payment_code`,
+    );
+    for (const row of result.rows) {
+      if (row.payment_code) {
+        await enqueuePaymentNotice(client, row.class_id, row.user_id, row.payment_code, "expired");
+      }
+    }
+    return result.rowCount ?? 0;
+  });
 };
 
 export const getMyClassPayment = async (classId: string, userId: string) => {
@@ -182,8 +195,13 @@ export const handleSePayWebhook = async (body: Buffer) => {
                 event.referenceCode ?? String(event.id),
               ],
             );
+            await enqueuePaymentNotice(client, row.class_id, row.user_id, code, "paid");
+            await enqueueEnrollmentConfirmation(client, row.class_id, row.user_id);
             outcome = "paid";
-          } else outcome = "amount_mismatch";
+          } else {
+            await enqueuePaymentNotice(client, row.class_id, row.user_id, code, "needs_review");
+            outcome = "amount_mismatch";
+          }
         } else if (
           row?.payment_status === "pending" ||
           row?.payment_status === "expired"
@@ -192,6 +210,9 @@ export const handleSePayWebhook = async (body: Buffer) => {
             "UPDATE enrollments SET payment_status = 'needs_review' WHERE class_id = $1 AND user_id = $2",
             [row.class_id, row.user_id],
           );
+          if (row.payment_code) {
+            await enqueuePaymentNotice(client, row.class_id, row.user_id, row.payment_code, "needs_review");
+          }
           outcome = "late_payment";
         } else outcome = "already_final";
       }

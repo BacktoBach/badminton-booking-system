@@ -23,6 +23,7 @@ import type {
 import { toPublicClass } from "../utils/class-serializer.js";
 import { createPaginationMeta } from "../utils/pagination.js";
 import { newPaymentCode, PAYMENT_TTL_MINUTES } from "./payment.service.js";
+import { enqueueEnrollmentConfirmation } from "./email-outbox.service.js";
 
 const mapEnrollmentDatabaseError = (error: unknown): never => {
   if (isPostgresErrorCode(error, "23505")) {
@@ -105,6 +106,7 @@ export const enrollInClass = async (classId: string, userId: string) => {
         );
       } else {
         await insertEnrollment(client, classId, userId);
+        await enqueueEnrollmentConfirmation(client, classId, userId);
       }
       const updatedClass = await findClassWithCount(client, classId);
       if (!updatedClass)

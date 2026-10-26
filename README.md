@@ -157,6 +157,10 @@ Giới hạn theo từng nhóm: đăng ký/hủy lớp dùng chung mức 20 lầ
 
 Chạy migration `004_password_reset.sql` trước khi triển khai backend. Trên Railway, cấu hình `RESEND_API_KEY`, `MAIL_FROM` (địa chỉ thuộc domain đã xác minh với Resend) và `PASSWORD_RESET_URL=https://badminton-booking-system-frontend.vercel.app/reset-password` cho từng môi trường production/staging. Đặt `PASSWORD_RESET_URL` theo đúng frontend tương ứng; không dùng URL preview ngẫu nhiên. Không đưa API key vào frontend. Sau khi deploy, thử gửi link tới một tài khoản kiểm thử và xác nhận link dùng được một lần, hết hạn sau 20 phút, còn phiên cũ bị từ chối. Token nằm trong phần `#token=` của URL và được xóa khỏi thanh địa chỉ khi trang mở.
 
+### Email thông báo lớp học và thanh toán
+
+Chạy migration `005_email_outbox.sql` trước khi triển khai backend. Backend dùng cùng `RESEND_API_KEY`, `MAIL_FROM` và origin của `PASSWORD_RESET_URL` để gửi link chi tiết lớp học. Mỗi sự kiện đăng ký thành công, thanh toán thành công hoặc cần kiểm tra, hết hạn giữ chỗ, đổi lịch/địa điểm và hủy lớp được ghi vào `email_outbox` cùng giao dịch dữ liệu. Backend quét lớp sắp khai giảng trong 24 giờ mỗi phút và gửi tối đa 5 email mỗi 15 giây; lỗi tạm thời được thử lại tối đa 5 lần với cùng idempotency key. Kiểm tra số bản ghi `failed_at IS NOT NULL` trong `email_outbox` khi vận hành để xử lý email gửi thất bại. Lớp đã có lịch sử thanh toán hiện không thể xóa theo quy tắc nghiệp vụ, nên thông báo hủy lớp chỉ áp dụng cho lớp miễn phí có thể xóa.
+
 ## Cài đặt local
 
 ### Yêu cầu
