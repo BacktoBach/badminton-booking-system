@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { QRCodeSVG } from 'qrcode.react'
 import { apiClient } from '../../config/axios'
 import { ErrorState, LoadingState } from '../../components/feedback/States'
 import { getErrorMessage } from '../../utils/api-error'
 import { classKeys } from '../../hooks/classes/useClasses'
 import { enrollmentKeys } from '../../hooks/enrollments/useEnrollments'
+import { createPaymentQrPayload } from '../../utils/payment-qr'
 
 type Payment = {
   classId: string
@@ -16,6 +18,45 @@ type Payment = {
   expiresAt: string | null
   serverNow: string
   receiver: { bankCode: string; accountNumber: string; accountName: string }
+}
+
+function PaymentQr({ payment }: { payment: Payment & { paymentCode: string } }) {
+  let qrPayload: string | null = null
+  try {
+    qrPayload = createPaymentQrPayload({
+      bankCode: payment.receiver.bankCode,
+      accountNumber: payment.receiver.accountNumber,
+      accountName: payment.receiver.accountName,
+      amountVnd: payment.amountVnd,
+      paymentCode: payment.paymentCode,
+    })
+  } catch {
+    // Keep the transfer instructions available if the bank configuration is unsupported.
+  }
+
+  return (
+    <div className="mt-5 rounded-xl border bg-white p-5 text-center">
+      <h2 className="font-bold">Quét mã VietQR để chuyển khoản</h2>
+      {qrPayload ? (
+        <QRCodeSVG
+          className="mx-auto mt-4 h-auto max-w-full"
+          value={qrPayload}
+          size={256}
+          marginSize={4}
+          level="M"
+          role="img"
+          aria-label={`Mã VietQR thanh toán ${payment.amountVnd.toLocaleString('vi-VN')} đồng cho lớp ${payment.classTitle}`}
+        />
+      ) : (
+        <p className="mt-3 text-sm text-rose-700">
+          Không tạo được mã QR cho ngân hàng này. Vui lòng dùng thông tin chuyển khoản bên dưới.
+        </p>
+      )}
+      <p className="mt-2 text-sm text-slate-500">
+        Kiểm tra người nhận và số tiền trong ứng dụng ngân hàng trước khi xác nhận.
+      </p>
+    </div>
+  )
 }
 
 export function PaymentPage() {
@@ -73,6 +114,12 @@ export function PaymentPage() {
               Chỗ được giữ trong {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}.
               Chuyển đúng số tiền và nội dung bên dưới.
             </p>
+            {payment.paymentCode && (
+              <PaymentQr
+                key={payment.paymentCode}
+                payment={{ ...payment, paymentCode: payment.paymentCode }}
+              />
+            )}
             <dl className="mt-5 grid gap-4 rounded-xl bg-slate-50 p-5 sm:grid-cols-2">
               <div>
                 <dt className="text-sm text-slate-500">Ngân hàng</dt>
