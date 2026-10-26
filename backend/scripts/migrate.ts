@@ -17,6 +17,7 @@ const defaultMigrationsDirectory = resolve(
 type MigrationFile = {
   filename: string;
   checksum: string;
+  legacyChecksum: string;
   sql: string;
 };
 
@@ -34,6 +35,8 @@ type MigrationOptions = {
 const calculateChecksum = (content: string): string =>
   createHash("sha256").update(content).digest("hex");
 
+const normalizeLineEndings = (content: string): string => content.replace(/\r\n/g, "\n");
+
 const loadMigrationFiles = async (directory: string): Promise<MigrationFile[]> => {
   const filenames = (await readdir(directory))
     .filter((filename) => filename.endsWith(".sql"))
@@ -47,7 +50,13 @@ const loadMigrationFiles = async (directory: string): Promise<MigrationFile[]> =
   return Promise.all(
     filenames.map(async (filename) => {
       const sql = await readFile(resolve(directory, filename), "utf8");
-      return { filename, sql, checksum: calculateChecksum(sql) };
+      const normalizedSql = normalizeLineEndings(sql);
+      return {
+        filename,
+        sql,
+        checksum: calculateChecksum(normalizedSql),
+        legacyChecksum: calculateChecksum(normalizedSql.replace(/\n/g, "\r\n")),
+      };
     }),
   );
 };
@@ -91,7 +100,8 @@ export const runMigrations = async ({
       if (!source) {
         throw new Error(`Applied migration is missing from source: ${applied.filename}`);
       }
-      if (source.checksum !== applied.checksum.trim()) {
+      const appliedChecksum = applied.checksum.trim();
+      if (source.checksum !== appliedChecksum && source.legacyChecksum !== appliedChecksum) {
         throw new Error(`Migration checksum mismatch: ${applied.filename}`);
       }
     }

@@ -18,7 +18,7 @@ type PaymentRow = {
 };
 
 const webhookSchema = z.object({
-  id: z.number().int().positive().safe(),
+  id: z.number().int().nonnegative().safe(),
   accountNumber: z.string().min(1),
   transferType: z.literal("in"),
   transferAmount: z.number().int().positive().safe(),

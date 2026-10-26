@@ -101,6 +101,30 @@ describe("database baseline", () => {
     ]);
   });
 
+  it("accepts the same applied migrations with different line endings", async () => {
+    const temporaryDirectory = await mkdtemp(join(tmpdir(), "badminton-migration-eol-"));
+    try {
+      for (const filename of [
+        "001_initial_schema.sql",
+        "002_class_tuition.sql",
+        "003_enrollment_payments.sql",
+      ]) {
+        const source = await readFile(resolve("database/migrations", filename), "utf8");
+        await writeFile(join(temporaryDirectory, filename), source.replace(/\r\n/g, "\n"));
+      }
+
+      await expect(
+        runMigrations({
+          connectionString: getTestDatabaseUrl(),
+          migrationsDirectory: temporaryDirectory,
+          log: () => undefined,
+        }),
+      ).resolves.toBeUndefined();
+    } finally {
+      await rm(temporaryDirectory, { recursive: true, force: true });
+    }
+  });
+
   it("creates required extensions, indexes and business-rule triggers from empty", async () => {
     const extensions = await databasePool.query<{ extname: string }>(
       "SELECT extname FROM pg_extension WHERE extname IN ('pgcrypto', 'pg_trgm') ORDER BY extname",
