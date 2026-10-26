@@ -74,6 +74,12 @@ export function LoginPage() {
           <input className="size-4 accent-emerald-700" type="checkbox" {...register('remember')} />{' '}
           Duy trì đăng nhập
         </label>
+        <Link
+          className="block text-right text-sm font-semibold text-emerald-800 hover:underline"
+          to="/forgot-password"
+        >
+          Quên mật khẩu?
+        </Link>
         <Button className="w-full rounded-lg bg-emerald-700 py-3" disabled={login.isPending}>
           {login.isPending ? 'Đang đăng nhập…' : 'Đăng nhập'}
         </Button>

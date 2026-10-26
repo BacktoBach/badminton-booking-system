@@ -25,6 +25,7 @@ Production đã được kiểm tra với Render PostgreSQL: health check, publi
 
 - Authentication bằng JWT trong HTTP-only cookie.
 - Đổi mật khẩu làm mất hiệu lực toàn bộ token cũ thông qua `token_version`.
+- Quên mật khẩu qua email Resend bằng link dùng một lần, hết hạn sau 20 phút.
 - RBAC sử dụng role mới nhất đọc từ PostgreSQL.
 - Guest xem, tìm kiếm và lọc các lớp sắp khai giảng.
 - Admin tạo, sửa, xóa lớp và xem danh sách học viên.
@@ -102,6 +103,8 @@ e2e/
 | `POST` | `/api/auth/logout`          | Public       | Xóa authentication cookie               | `200`      |
 | `GET`  | `/api/auth/me`              | Đã đăng nhập | Lấy user và thời điểm hết hạn session   | `200`      |
 | `PUT`  | `/api/auth/change-password` | Đã đăng nhập | Đổi mật khẩu và thu hồi token cũ        | `200`      |
+| `POST` | `/api/auth/forgot-password` | Public       | Gửi link đặt lại mật khẩu               | `202`      |
+| `POST` | `/api/auth/reset-password`  | Public       | Đặt lại mật khẩu và thu hồi phiên cũ    | `200`      |
 
 ### Classes
 
@@ -149,6 +152,10 @@ Request/response đầy đủ nằm trong [API contract](backend/docs/API_CONTRA
 | `503` | `DATABASE_UNAVAILABLE`                                                                | Health check không kết nối được PostgreSQL                    |
 
 Giới hạn theo từng nhóm: đăng ký/hủy lớp dùng chung mức 20 lần/10 phút cho mỗi tài khoản và 100 lần/10 phút cho mỗi IP; danh sách/chi tiết lớp công khai dùng chung mức 600 lần/5 phút cho mỗi IP. Login/register có giới hạn riêng. Bộ đếm hiện lưu trong bộ nhớ của từng tiến trình backend; nếu chạy nhiều replica, cần chuyển sang store dùng chung để giới hạn chính xác toàn hệ thống.
+
+### Cấu hình quên mật khẩu
+
+Chạy migration `004_password_reset.sql` trước khi triển khai backend. Trên Railway, cấu hình `RESEND_API_KEY`, `MAIL_FROM` (địa chỉ thuộc domain đã xác minh với Resend) và `PASSWORD_RESET_URL=https://badminton-booking-system-frontend.vercel.app/reset-password` cho từng môi trường production/staging. Đặt `PASSWORD_RESET_URL` theo đúng frontend tương ứng; không dùng URL preview ngẫu nhiên. Không đưa API key vào frontend. Sau khi deploy, thử gửi link tới một tài khoản kiểm thử và xác nhận link dùng được một lần, hết hạn sau 20 phút, còn phiên cũ bị từ chối. Token nằm trong phần `#token=` của URL và được xóa khỏi thanh địa chỉ khi trang mở.
 
 ## Cài đặt local
 

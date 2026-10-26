@@ -10,7 +10,7 @@ describe('Vercel security headers', () => {
 
   it('protects every frontend route with baseline browser security headers', () => {
     expect(vercelConfig.headers).toContainEqual(expect.objectContaining({ source: '/(.*)' }))
-    expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin')
+    expect(headers['referrer-policy']).toBe('no-referrer')
     expect(headers['x-content-type-options']).toBe('nosniff')
     expect(headers['x-frame-options']).toBe('DENY')
     expect(headers['permissions-policy']).toContain('camera=()')

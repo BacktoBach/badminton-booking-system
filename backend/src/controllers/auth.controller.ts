@@ -4,12 +4,19 @@ import {
   getAuthCookieOptions,
   getClearAuthCookieOptions,
 } from "../config/auth-cookie.js";
-import type { ChangePasswordInput, LoginInput, RegisterInput } from "../schemas/auth.schema.js";
+import type {
+  ChangePasswordInput,
+  ForgotPasswordInput,
+  LoginInput,
+  RegisterInput,
+  ResetPasswordInput,
+} from "../schemas/auth.schema.js";
 import {
   changeUserPassword,
   loginUser,
   registerUser,
 } from "../services/auth.service.js";
+import { requestPasswordReset, resetPassword } from "../services/password-reset.service.js";
 
 export const register = async (request: Request, response: Response): Promise<void> => {
   const user = await registerUser(request.body as RegisterInput);
@@ -45,4 +52,23 @@ export const changePassword = async (request: Request, response: Response): Prom
 export const logout = (_request: Request, response: Response): void => {
   response.clearCookie(getAuthCookieName(), getClearAuthCookieOptions());
   response.status(200).json({ message: "Sign out successful" });
+};
+
+export const forgotPassword = async (request: Request, response: Response): Promise<void> => {
+  const startedAt = performance.now();
+  await requestPasswordReset(request.body as ForgotPasswordInput);
+  const remainingMs = 300 - (performance.now() - startedAt);
+  if (remainingMs > 0) {
+    await new Promise<void>((resolve) => setTimeout(resolve, remainingMs));
+  }
+  response.status(202).json({ message: "If the email is registered, a reset link will be sent" });
+};
+
+export const completePasswordReset = async (
+  request: Request,
+  response: Response,
+): Promise<void> => {
+  await resetPassword(request.body as ResetPasswordInput);
+  response.clearCookie(getAuthCookieName(), getClearAuthCookieOptions());
+  response.status(200).json({ message: "Password reset; please sign in again" });
 };

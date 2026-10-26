@@ -61,6 +61,18 @@ const envSchema = z
     SEPAY_BANK_CODE: optionalSePayValue(2),
     SEPAY_ACCOUNT_NUMBER: optionalSePayValue(4),
     SEPAY_ACCOUNT_NAME: optionalSePayValue(2),
+    RESEND_API_KEY: z.preprocess(
+      (value) => value === "" ? undefined : value,
+      z.string().min(1).optional(),
+    ),
+    MAIL_FROM: z.preprocess(
+      (value) => value === "" ? undefined : value,
+      z.string().min(3).optional(),
+    ),
+    PASSWORD_RESET_URL: z.string().url().refine(
+      (value) => ["http:", "https:"].includes(new URL(value).protocol),
+      "must use HTTP or HTTPS",
+    ).optional(),
   })
   .superRefine((value, context) => {
     if (value.SEPAY_ENABLED) {
@@ -69,6 +81,18 @@ const envSchema = z
       }
     }
     if (value.NODE_ENV === "production") {
+      for (const field of ["RESEND_API_KEY", "MAIL_FROM", "PASSWORD_RESET_URL"] as const) {
+        if (!value[field]) {
+          context.addIssue({ code: "custom", path: [field], message: "required in production" });
+        }
+      }
+      if (value.PASSWORD_RESET_URL && !value.PASSWORD_RESET_URL.startsWith("https://")) {
+        context.addIssue({
+          code: "custom",
+          path: ["PASSWORD_RESET_URL"],
+          message: "must use HTTPS in production",
+        });
+      }
       for (const origin of value.CLIENT_ORIGINS) {
         if (!origin.startsWith("https://")) {
           context.addIssue({
