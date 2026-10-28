@@ -5,7 +5,7 @@ import { userAuthStatePath } from "../support/auth-state";
 test.use({ storageState: userAuthStatePath });
 
 test.describe("Booking business rules", () => {
-  test("disables enrollment when a class is full", async ({ page }) => {
+  test("offers the waitlist when a class is full", async ({ page }) => {
     await page.goto(`/classes/${seededClasses.full.id}`);
 
     await expect(
@@ -13,8 +13,8 @@ test.describe("Booking business rules", () => {
     ).toBeVisible();
     await expect(page.getByText("1/1 học viên", { exact: true })).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Đăng ký lớp học" }),
-    ).toBeDisabled();
+      page.getByRole("button", { name: "Tham gia danh sách chờ" }),
+    ).toBeEnabled();
   });
 
   test("does not allow cancellation after a class has started", async ({

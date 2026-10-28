@@ -1,4 +1,5 @@
 import { pool } from "../database/pool.js";
+import type { PoolClient } from "pg";
 import { env } from "../config/env.js";
 import {
   isPostgresError,
@@ -49,7 +50,11 @@ const mapEnrollmentDatabaseError = (error: unknown): never => {
       );
     }
     if (error.message === "CLASS_CANCELLED") {
-      throw new AppError(409, "CLASS_CANCELLED", "This class has been cancelled");
+      throw new AppError(
+        409,
+        "CLASS_CANCELLED",
+        "This class has been cancelled",
+      );
     }
   }
   throw error;
@@ -65,40 +70,53 @@ const requireLockedClass = async (
   return classRecord;
 };
 
-export const enrollInClass = async (classId: string, userId: string) => {
+export const enrollInClassInTransaction = async (
+  classId: string,
+  userId: string,
+  client: PoolClient,
+) => {
   try {
-    return await withTransaction(async (client) => {
-      const classRecord = await requireLockedClass(classId, client);
-      const cancellation = await client.query("SELECT cancelled_at FROM classes WHERE id = $1", [classId]);
-      if (cancellation.rows[0]?.cancelled_at) throw new AppError(409, "CLASS_CANCELLED", "This class has been cancelled");
-      if (classRecord.start_date.getTime() <= Date.now()) {
-        throw new AppError(
-          409,
-          "CLASS_ALREADY_STARTED",
-          "This class has already started",
-        );
+    const classRecord = await requireLockedClass(classId, client);
+    const cancellation = await client.query(
+      "SELECT cancelled_at FROM classes WHERE id = $1",
+      [classId],
+    );
+    if (cancellation.rows[0]?.cancelled_at) {
+      throw new AppError(
+        409,
+        "CLASS_CANCELLED",
+        "This class has been cancelled",
+      );
+    }
+    if (classRecord.start_date.getTime() <= Date.now()) {
+      throw new AppError(
+        409,
+        "CLASS_ALREADY_STARTED",
+        "This class has already started",
+      );
+    }
+    if (await enrollmentExists(client, classId, userId)) {
+      throw new AppError(
+        409,
+        "DUPLICATE_ENROLLMENT",
+        "You are already enrolled in this class",
+      );
+    }
+    const currentStudents = await countClassEnrollments(client, classId);
+    if (currentStudents >= classRecord.max_students) {
+      throw new AppError(
+        409,
+        "CLASS_FULL",
+        "This class has reached its maximum capacity",
+      );
+    }
+    if (classRecord.tuition_vnd > 0) {
+      if (!env.SEPAY_ENABLED) {
+        throw new AppError(503, "PAYMENT_DISABLED", "Payment is unavailable");
       }
-      if (await enrollmentExists(client, classId, userId)) {
-        throw new AppError(
-          409,
-          "DUPLICATE_ENROLLMENT",
-          "You are already enrolled in this class",
-        );
-      }
-      const currentStudents = await countClassEnrollments(client, classId);
-      if (currentStudents >= classRecord.max_students) {
-        throw new AppError(
-          409,
-          "CLASS_FULL",
-          "This class has reached its maximum capacity",
-        );
-      }
-      if (classRecord.tuition_vnd > 0) {
-        if (!env.SEPAY_ENABLED)
-          throw new AppError(503, "PAYMENT_DISABLED", "Payment is unavailable");
-        const code = newPaymentCode();
-        await client.query(
-          `INSERT INTO enrollments
+      const code = newPaymentCode();
+      await client.query(
+        `INSERT INTO enrollments
              (class_id, user_id, payment_status, amount_vnd, payment_code, payment_expires_at)
            VALUES ($1, $2, 'pending', $3, $4, NOW() + INTERVAL '15 minutes')
            ON CONFLICT (class_id, user_id) DO UPDATE
@@ -107,39 +125,54 @@ export const enrollInClass = async (classId: string, userId: string) => {
                paid_at = NULL, provider_reference = NULL
            WHERE enrollments.payment_status <> 'paid'
              AND NOT (enrollments.payment_status = 'pending' AND enrollments.payment_expires_at > NOW())`,
-          [classId, userId, classRecord.tuition_vnd, code],
-        );
-      } else {
-        await insertEnrollment(client, classId, userId);
-        await enqueueEnrollmentConfirmation(client, classId, userId);
-      }
-      const updatedClass = await findClassWithCount(client, classId);
-      if (!updatedClass)
-        throw new Error("Enrolled class disappeared inside transaction");
-      return {
-        ...toPublicClass(updatedClass),
-        ...(classRecord.tuition_vnd > 0
-          ? {
-              payment: {
-                classId,
-                status: "pending" as const,
-                expiresInMinutes: PAYMENT_TTL_MINUTES,
-              },
-            }
-          : {}),
-      };
-    });
+        [classId, userId, classRecord.tuition_vnd, code],
+      );
+    } else {
+      await insertEnrollment(client, classId, userId);
+      await enqueueEnrollmentConfirmation(client, classId, userId);
+    }
+    const updatedClass = await findClassWithCount(client, classId);
+    if (!updatedClass)
+      throw new Error("Enrolled class disappeared inside transaction");
+    return {
+      ...toPublicClass(updatedClass),
+      ...(classRecord.tuition_vnd > 0
+        ? {
+            payment: {
+              classId,
+              status: "pending" as const,
+              expiresInMinutes: PAYMENT_TTL_MINUTES,
+            },
+          }
+        : {}),
+    };
   } catch (error) {
     if (error instanceof AppError) throw error;
     return mapEnrollmentDatabaseError(error);
   }
 };
 
-export const cancelClassEnrollment = async (classId: string, userId: string) =>
-  withTransaction(async (client) => {
+export const enrollInClass = async (classId: string, userId: string) =>
+  withTransaction((client) =>
+    enrollInClassInTransaction(classId, userId, client),
+  );
+
+export const cancelClassEnrollment = async (
+  classId: string,
+  userId: string,
+) => {
+  const result = await withTransaction(async (client) => {
     const classRecord = await requireLockedClass(classId, client);
-    const cancellation = await client.query("SELECT cancelled_at FROM classes WHERE id = $1", [classId]);
-    if (cancellation.rows[0]?.cancelled_at) throw new AppError(409, "CLASS_CANCELLED", "This class has been cancelled");
+    const cancellation = await client.query(
+      "SELECT cancelled_at FROM classes WHERE id = $1",
+      [classId],
+    );
+    if (cancellation.rows[0]?.cancelled_at)
+      throw new AppError(
+        409,
+        "CLASS_CANCELLED",
+        "This class has been cancelled",
+      );
     if (classRecord.start_date.getTime() <= Date.now()) {
       throw new AppError(
         409,
@@ -148,7 +181,11 @@ export const cancelClassEnrollment = async (classId: string, userId: string) =>
       );
     }
     if (classRecord.start_date.getTime() - Date.now() < 24 * 60 * 60 * 1000) {
-      throw new AppError(409, "CANCELLATION_DEADLINE_PASSED", "Enrollment can only be cancelled at least 24 hours before the class starts");
+      throw new AppError(
+        409,
+        "CANCELLATION_DEADLINE_PASSED",
+        "Enrollment can only be cancelled at least 24 hours before the class starts",
+      );
     }
     const payment = await client.query<{
       amount_vnd: number;
@@ -178,6 +215,17 @@ export const cancelClassEnrollment = async (classId: string, userId: string) =>
     if (!updatedClass) throw new Error("Class disappeared inside transaction");
     return toPublicClass(updatedClass);
   });
+  const { promoteAvailableWaitlists } = await import("./waitlist.service.js");
+  try {
+    await promoteAvailableWaitlists();
+  } catch (error) {
+    console.error(
+      "Enrollment was cancelled but waitlist promotion failed",
+      error,
+    );
+  }
+  return result;
+};
 
 export const getMyEnrollments = async (
   userId: string,

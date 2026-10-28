@@ -21,7 +21,10 @@ import type {
 } from "../types/class.js";
 import { createPaginationMeta } from "../utils/pagination.js";
 import { toPublicClass } from "../utils/class-serializer.js";
-import { discardPendingReminders, enqueueClassChangeNotice } from "./email-outbox.service.js";
+import {
+  discardPendingReminders,
+  enqueueClassChangeNotice,
+} from "./email-outbox.service.js";
 
 type ClassNoticeRow = {
   id: string;
@@ -39,9 +42,13 @@ export const getUpcomingClasses = async (query: ClassListQuery) => {
   };
 };
 
-export const getPublicClass = async (classId: string, userId?: string): Promise<PublicClass> => {
+export const getPublicClass = async (
+  classId: string,
+  userId?: string,
+): Promise<PublicClass> => {
   const record = await findPublicClassById(pool, classId, userId);
-  if (!record) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
+  if (!record)
+    throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
   return toPublicClass(record, record.is_enrolled ?? false);
 };
 
@@ -53,10 +60,16 @@ export const getAdminClasses = async (query: ClassListQuery) => {
   };
 };
 
-export const createAdminClass = async (input: CreateClassInput, adminId: string): Promise<PublicClass> =>
+export const createAdminClass = async (
+  input: CreateClassInput,
+  adminId: string,
+): Promise<PublicClass> =>
   toPublicClass(await createClass(pool, { ...input, createdById: adminId }));
 
-export const updateAdminClass = async (classId: string, input: UpdateClassInput): Promise<PublicClass> => {
+export const updateAdminClass = async (
+  classId: string,
+  input: UpdateClassInput,
+): Promise<PublicClass> => {
   try {
     return await withTransaction(async (client) => {
       const previous = await client.query<ClassNoticeRow>(
@@ -64,9 +77,18 @@ export const updateAdminClass = async (classId: string, input: UpdateClassInput)
         [classId],
       );
       const before = previous.rows[0];
-      if (!before) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
-      const cancellation = await client.query("SELECT cancelled_at FROM classes WHERE id = $1", [classId]);
-      if (cancellation.rows[0]?.cancelled_at) throw new AppError(409, "CLASS_ALREADY_CANCELLED", "Class was already cancelled");
+      if (!before)
+        throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
+      const cancellation = await client.query(
+        "SELECT cancelled_at FROM classes WHERE id = $1",
+        [classId],
+      );
+      if (cancellation.rows[0]?.cancelled_at)
+        throw new AppError(
+          409,
+          "CLASS_ALREADY_CANCELLED",
+          "Class was already cancelled",
+        );
       if (input.startDate !== undefined) {
         if (before.start_date.getTime() <= Date.now()) {
           throw new AppError(
@@ -78,22 +100,33 @@ export const updateAdminClass = async (classId: string, input: UpdateClassInput)
       }
 
       const record = await updateClass(client, classId, input);
-      if (!record) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
-      if (before.start_date.getTime() !== record.start_date.getTime() ||
-          before.schedule !== record.schedule || before.location !== record.location) {
+      if (!record)
+        throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
+      if (
+        before.start_date.getTime() !== record.start_date.getTime() ||
+        before.schedule !== record.schedule ||
+        before.location !== record.location
+      ) {
         await discardPendingReminders(client, classId);
-        await enqueueClassChangeNotice(client, {
-          id: classId,
-          title: record.title,
-          startDate: record.start_date,
-          schedule: record.schedule,
-          location: record.location,
-        }, randomUUID(), false);
+        await enqueueClassChangeNotice(
+          client,
+          {
+            id: classId,
+            title: record.title,
+            startDate: record.start_date,
+            schedule: record.schedule,
+            location: record.location,
+          },
+          randomUUID(),
+          false,
+        );
       }
       return toPublicClass(record);
     });
   } catch (error) {
-    if (hasPostgresConstraint(error, "classes_capacity_not_below_enrollments")) {
+    if (
+      hasPostgresConstraint(error, "classes_capacity_not_below_enrollments")
+    ) {
       throw new AppError(
         409,
         "CAPACITY_BELOW_CURRENT_ENROLLMENTS",
@@ -111,19 +144,44 @@ export const deleteAdminClass = async (classId: string): Promise<void> => {
       [classId],
     );
     const details = classRecord.rows[0];
-    if (!details) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
-    const cancelled = await client.query("SELECT cancelled_at FROM classes WHERE id = $1", [classId]);
-    if (cancelled.rows[0]?.cancelled_at) throw new AppError(409, "CLASS_ALREADY_CANCELLED", "Class was already cancelled");
+    if (!details)
+      throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
+    const cancelled = await client.query(
+      "SELECT cancelled_at FROM classes WHERE id = $1",
+      [classId],
+    );
+    if (cancelled.rows[0]?.cancelled_at)
+      throw new AppError(
+        409,
+        "CLASS_ALREADY_CANCELLED",
+        "Class was already cancelled",
+      );
     await discardPendingReminders(client, classId);
-    await enqueueClassChangeNotice(client, {
-      id: details.id,
-      title: details.title,
-      startDate: details.start_date,
-      schedule: details.schedule,
-      location: details.location,
-    }, randomUUID(), true);
-    await client.query("UPDATE classes SET cancelled_at = NOW() WHERE id = $1", [classId]);
-    await client.query("UPDATE enrollments SET payment_status = 'cancelled' WHERE class_id = $1 AND payment_status = 'pending'", [classId]);
+    await enqueueClassChangeNotice(
+      client,
+      {
+        id: details.id,
+        title: details.title,
+        startDate: details.start_date,
+        schedule: details.schedule,
+        location: details.location,
+      },
+      randomUUID(),
+      true,
+    );
+    await client.query(
+      "UPDATE classes SET cancelled_at = NOW() WHERE id = $1",
+      [classId],
+    );
+    await client.query(
+      `UPDATE class_waitlist SET status = 'cancelled', responded_at = NOW()
+       WHERE class_id = $1 AND status IN ('waiting', 'offered')`,
+      [classId],
+    );
+    await client.query(
+      "UPDATE enrollments SET payment_status = 'cancelled' WHERE class_id = $1 AND payment_status = 'pending'",
+      [classId],
+    );
     await client.query(
       `UPDATE enrollments SET refund_status = 'pending'
        WHERE class_id = $1 AND payment_status = 'paid' AND amount_vnd > 0`,
@@ -132,7 +190,10 @@ export const deleteAdminClass = async (classId: string): Promise<void> => {
   });
 };
 
-export const getClassStudents = async (classId: string, query: StudentListQuery) => {
+export const getClassStudents = async (
+  classId: string,
+  query: StudentListQuery,
+) => {
   if (!(await findPublicClassById(pool, classId))) {
     throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
   }

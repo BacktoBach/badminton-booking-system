@@ -7,14 +7,15 @@ import type {
 } from "../types/enrollment.js";
 
 type CountRow = { total: number };
-const activeEnrollment = "(e.payment_status = 'paid' OR (e.payment_status = 'pending' AND e.payment_expires_at > NOW()))";
+const activeEnrollment =
+  "(e.payment_status = 'paid' OR (e.payment_status = 'pending' AND e.payment_expires_at > NOW()))";
 
 export const findClassForUpdate = async (
   database: DatabaseClient,
   classId: string,
 ): Promise<LockedClassRow | null> => {
   const result = await database.query<LockedClassRow>(
-     `SELECT id, start_date, max_students, tuition_vnd
+    `SELECT id, start_date, max_students, tuition_vnd
      FROM classes
      WHERE id = $1
      FOR UPDATE`,
@@ -40,7 +41,8 @@ export const countClassEnrollments = async (
   classId: string,
 ): Promise<number> => {
   const result = await database.query<CountRow>(
-    `SELECT COUNT(*)::INTEGER AS total FROM enrollments e WHERE class_id = $1 AND ${activeEnrollment}`,
+    `SELECT ((SELECT COUNT(*) FROM enrollments e WHERE class_id = $1 AND ${activeEnrollment})
+      + (SELECT COUNT(*) FROM class_waitlist w WHERE class_id = $1 AND w.status = 'offered' AND w.offer_expires_at > NOW()))::INTEGER AS total`,
     [classId],
   );
   return result.rows[0]?.total ?? 0;
@@ -76,7 +78,9 @@ export const findClassWithCount = async (
   const result = await database.query<ClassWithCountRow>(
     `SELECT c.id, c.title, c.description, c.coach_name, c.level, c.start_date,
             c.schedule, c.location, c.max_students, c.tuition_vnd, c.created_by_id,
-            c.created_at, c.updated_at, COUNT(e.user_id)::INTEGER AS current_students
+            c.created_at, c.updated_at,
+            (COUNT(e.user_id) + (SELECT COUNT(*) FROM class_waitlist w WHERE w.class_id = c.id
+              AND w.status = 'offered' AND w.offer_expires_at > NOW()))::INTEGER AS current_students
      FROM classes c
      LEFT JOIN enrollments e ON e.class_id = c.id AND ${activeEnrollment}
      WHERE c.id = $1
@@ -91,11 +95,12 @@ export const listUserEnrollments = async (
   userId: string,
   query: EnrollmentListQuery,
 ): Promise<{ rows: EnrollmentClassRow[]; total: number }> => {
-  const statusCondition = query.status === "upcoming"
-    ? "AND c.start_date > NOW()"
-    : query.status === "past"
-      ? "AND c.start_date <= NOW()"
-      : "";
+  const statusCondition =
+    query.status === "upcoming"
+      ? "AND c.start_date > NOW()"
+      : query.status === "past"
+        ? "AND c.start_date <= NOW()"
+        : "";
   const order = query.status === "past" ? "DESC" : "ASC";
   const offset = (query.page - 1) * query.limit;
 
@@ -104,7 +109,8 @@ export const listUserEnrollments = async (
       `SELECT c.id, c.title, c.description, c.coach_name, c.level, c.start_date,
               c.schedule, c.location, c.max_students, c.tuition_vnd, c.created_by_id,
               c.created_at, c.updated_at, own.enrolled_at,
-              COUNT(all_enrollments.user_id)::INTEGER AS current_students
+              (COUNT(all_enrollments.user_id) + (SELECT COUNT(*) FROM class_waitlist w WHERE w.class_id = c.id
+                AND w.status = 'offered' AND w.offer_expires_at > NOW()))::INTEGER AS current_students
        FROM enrollments own
        JOIN classes c ON c.id = own.class_id
        LEFT JOIN enrollments all_enrollments ON all_enrollments.class_id = c.id
