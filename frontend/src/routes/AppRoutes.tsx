@@ -71,6 +71,12 @@ const NotFoundPage = lazy(() =>
 const TermsPage = lazy(() =>
   import('../pages/TermsPage').then((module) => ({ default: module.TermsPage })),
 )
+const PrivacyPage = lazy(() =>
+  import('../pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })),
+)
+const RefundPolicyPage = lazy(() =>
+  import('../pages/RefundPolicyPage').then((module) => ({ default: module.RefundPolicyPage })),
+)
 
 export const AppRoutes = () => (
   <Suspense
@@ -96,6 +102,8 @@ export const AppRoutes = () => (
         <Route path="classes" element={<ClassListPage />} />
         <Route path="classes/:classId" element={<ClassDetailPage />} />
         <Route path="terms" element={<TermsPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="refund-policy" element={<RefundPolicyPage />} />
         <Route path="forbidden" element={<ForbiddenPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="change-password" element={<ChangePasswordPage />} />

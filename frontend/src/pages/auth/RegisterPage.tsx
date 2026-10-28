@@ -18,7 +18,7 @@ export function RegisterPage() {
     formState: { errors },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: '', email: '', password: '' },
+    defaultValues: { name: '', email: '', password: '', acceptedTerms: false },
   })
   const mutation = useRegister()
   const navigate = useNavigate()
@@ -77,6 +77,29 @@ export function RegisterPage() {
           error={errors.password?.message}
           {...register('password')}
         />
+        <label className="flex items-start gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            className="mt-1 size-4 accent-emerald-700"
+            {...register('acceptedTerms')}
+          />
+          <span>
+            Tôi đã đọc và đồng ý với{' '}
+            <Link className="text-emerald-700 underline" to="/terms" target="_blank">
+              Điều khoản sử dụng
+            </Link>{' '}
+            và{' '}
+            <Link className="text-emerald-700 underline" to="/privacy" target="_blank">
+              Chính sách bảo mật
+            </Link>
+            .
+          </span>
+        </label>
+        {errors.acceptedTerms && (
+          <p role="alert" className="text-sm text-rose-700">
+            {errors.acceptedTerms.message}
+          </p>
+        )}
         <Button className="w-full rounded-lg bg-emerald-700 py-3" disabled={mutation.isPending}>
           {mutation.isPending ? 'Đang tạo tài khoản…' : 'Tạo tài khoản học viên'}
         </Button>

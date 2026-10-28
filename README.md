@@ -169,6 +169,12 @@ Chạy migration `007_waitlist.sql` trước khi triển khai backend. Học vi�
 
 Học viên có thể tự hủy đăng ký trước giờ khai giảng ít nhất 24 giờ. Học viên đã thanh toán cần liên hệ quản trị viên để đối soát; hệ thống không tự chuyển khoản hoàn. Khi trung tâm hủy lớp, lớp được đánh dấu đã hủy và giữ nguyên lịch sử đăng ký, thanh toán. Học viên đã thanh toán được hoàn 100% học phí đã nhận; email thông báo khoản hoàn đang chờ đối soát. Quản trị viên chuyển khoản hoàn bên ngoài hệ thống, nhập mã giao dịch và xác nhận đã hoàn trên trang học viên của lớp đã hủy. Không xác nhận trước khi tiền thực sự được chuyển. Chạy migration `006_class_cancellations.sql` trước khi deploy backend mới.
 
+### Trang pháp lý và yêu cầu xóa dữ liệu
+
+Chạy migration `008_legal_consent_requests.sql` trước khi triển khai backend yêu cầu đồng ý điều khoản. Trang đăng ký yêu cầu học viên đồng ý với Điều khoản sử dụng và Chính sách bảo mật; backend lưu thời điểm và phiên bản nội dung đã đồng ý. Trang Chính sách bảo mật cho học viên gửi yêu cầu xóa dữ liệu. Yêu cầu được lưu trong `data_deletion_requests` để người vận hành kiểm tra, liên hệ và xử lý theo nghĩa vụ lưu trữ; hệ thống không tự xóa tài khoản hoặc lịch sử thanh toán.
+
+Trước khi công bố, chủ dự án cần duyệt nội dung ba trang `/terms`, `/privacy`, `/refund-policy` và xác định đầu mối tiếp nhận, thời hạn xử lý yêu cầu dữ liệu. Sau khi triển khai, kiểm tra đăng ký mới, truy cập các trang công khai và tạo yêu cầu xóa thử bằng tài khoản học viên; kiểm tra bản ghi tương ứng trong `data_deletion_requests`.
+
 ## Cài đặt local
 
 ### Yêu cầu

@@ -83,7 +83,7 @@ export const components = {
     RegisterRequest: {
       type: "object",
       additionalProperties: false,
-      required: ["name", "email", "password"],
+      required: ["name", "email", "password", "acceptedTerms"],
       properties: {
         name: {
           type: "string",
@@ -103,6 +103,7 @@ export const components = {
           minLength: 8,
           example: "ExamplePass123!",
         },
+        acceptedTerms: { type: "boolean", enum: [true], description: "Agreement to the current terms and privacy policy" },
       },
     },
     LoginRequest: {

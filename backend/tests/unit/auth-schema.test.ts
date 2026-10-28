@@ -7,6 +7,7 @@ describe("authentication schemas", () => {
       name: "  Student One  ",
       email: "  STUDENT@EXAMPLE.COM ",
       password: "Password123",
+      acceptedTerms: true,
     })).toMatchObject({ name: "Student One", email: "student@example.com" });
   });
 

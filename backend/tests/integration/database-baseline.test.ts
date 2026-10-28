@@ -97,6 +97,7 @@ describe("database baseline", () => {
     expect(tableResult.rows.map((row) => row.table_name).sort()).toEqual([
       "classes",
       "class_waitlist",
+      "data_deletion_requests",
       "email_outbox",
       "enrollments",
       "password_reset_tokens",
