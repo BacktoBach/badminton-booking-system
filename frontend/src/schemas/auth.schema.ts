@@ -20,6 +20,9 @@ export const registerSchema = z.object({
   name: z.string().trim().min(2, 'Tên cần ít nhất 2 ký tự').max(100),
   email: z.email('Email không hợp lệ').max(255),
   password: newPassword,
+  acceptedTerms: z
+    .boolean()
+    .refine((value) => value, 'Vui lòng đồng ý điều khoản và chính sách bảo mật'),
 })
 export const changePasswordSchema = z
   .object({

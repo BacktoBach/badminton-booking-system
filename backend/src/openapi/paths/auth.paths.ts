@@ -46,6 +46,30 @@ export const authPaths = {
       },
     },
   },
+  "/api/auth/data-deletion-request": {
+    get: {
+      tags: ["Authentication"],
+      summary: "Get the current user's pending data deletion request",
+      operationId: "getDataDeletionRequest",
+      responses: {
+        "200": jsonResponse("Pending request status", {
+          type: "object",
+          required: ["data"],
+          properties: { data: { type: "object", required: ["requestedAt"], properties: { requestedAt: { type: "string", nullable: true, format: "date-time" } } } },
+        }),
+        "401": { description: "Authentication required" },
+      },
+    },
+    post: {
+      tags: ["Authentication"],
+      summary: "Request review and deletion of personal data",
+      operationId: "requestDataDeletion",
+      responses: {
+        "202": messageResponse("Request received", "Data deletion request received"),
+        "401": { description: "Authentication required" },
+      },
+    },
+  },
   "/api/auth/login": {
     post: {
       tags: ["Authentication"],

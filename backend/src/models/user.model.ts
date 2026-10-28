@@ -29,8 +29,8 @@ export const createUser = async (
 ): Promise<UserRow> => {
   const result = await database.query<UserRow>(
     `
-      INSERT INTO users (name, email, password_hash, role)
-      VALUES ($1, $2, $3, 'user')
+      INSERT INTO users (name, email, password_hash, role, terms_accepted_at, terms_version)
+      VALUES ($1, $2, $3, 'user', NOW(), '2026-10-28')
       RETURNING *
     `,
     [input.name, input.email, input.passwordHash],

@@ -78,6 +78,7 @@ test.describe("Authentication and session management", () => {
     await expect(page.getByText("Mật khẩu cần ít nhất 8 ký tự")).toBeVisible();
 
     await page.getByLabel("Mật khẩu", { exact: true }).fill("ValidE2E123!");
+    await page.getByRole("checkbox", { name: /Tôi đã đọc và đồng ý/ }).check();
     await page.getByRole("button", { name: "Tạo tài khoản học viên" }).click();
     await expect(page.getByText("Email này đã được đăng ký.")).toBeVisible();
     await expect(page).toHaveURL(/\/register$/);

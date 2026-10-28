@@ -11,6 +11,7 @@ export class AuthPage {
     await this.page.getByLabel("Họ tên học viên").fill(user.name);
     await this.page.getByLabel("Email đăng ký").fill(user.email);
     await this.page.getByLabel("Mật khẩu", { exact: true }).fill(user.password);
+    await this.page.getByRole("checkbox", { name: /Tôi đã đọc và đồng ý/ }).check();
     await this.page
       .getByRole("button", { name: "Tạo tài khoản học viên" })
       .click();

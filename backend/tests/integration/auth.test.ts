@@ -68,6 +68,7 @@ describe("authentication API", () => {
       name: "New Student",
       email: "NEW@EXAMPLE.COM",
       password: "Password123",
+      acceptedTerms: true,
       role: "admin",
     });
     expect(response.status).toBe(400);
@@ -76,6 +77,7 @@ describe("authentication API", () => {
       name: "New Student",
       email: "NEW@EXAMPLE.COM",
       password: "Password123",
+      acceptedTerms: true,
     });
     expect(validResponse.status).toBe(201);
     expect(validResponse.body.data.user).toMatchObject({ email: "new@example.com", role: "user" });
@@ -83,7 +85,7 @@ describe("authentication API", () => {
   });
 
   it("maps duplicate registration to a stable conflict", async () => {
-    const body = { name: "Student", email: "student@example.com", password: "Password123" };
+    const body = { name: "Student", email: "student@example.com", password: "Password123", acceptedTerms: true };
     expect((await request(app).post("/api/auth/register").send(body)).status).toBe(201);
     const duplicate = await request(app).post("/api/auth/register").send(body);
     expect(duplicate.status).toBe(409);

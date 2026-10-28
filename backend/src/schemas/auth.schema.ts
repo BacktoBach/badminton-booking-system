@@ -9,6 +9,7 @@ export const registerSchema = z
     name: z.string().trim().min(2).max(100),
     email: z.string().trim().toLowerCase().email().max(255),
     password: z.string().min(8).refine(passwordWithinBcryptLimit, passwordTooLongMessage),
+    acceptedTerms: z.literal(true),
   })
   .strict();
 
