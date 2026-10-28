@@ -10,7 +10,7 @@ export function ClassCard({ item }: { item: BadmintonClass }) {
     <article
       data-testid="class-card"
       data-class-id={item.id}
-      className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-3">
         <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase text-emerald-700">
@@ -19,7 +19,7 @@ export function ClassCard({ item }: { item: BadmintonClass }) {
         <span
           className={`rounded-full px-3 py-1 text-xs font-semibold ${item.isFull ? 'bg-rose-50 text-rose-700' : started ? 'bg-slate-100 text-slate-600' : 'bg-lime-100 text-lime-800'}`}
         >
-          {item.isFull ? 'Đã đầy' : started ? 'Đã bắt đầu' : `Còn ${item.availableSlots} chỗ`}
+          {item.cancelledAt ? 'Đã hủy' : item.isFull ? 'Đã đầy' : started ? 'Đã bắt đầu' : `Còn ${item.availableSlots} chỗ`}
         </span>
       </div>
       <h2 className="mt-4 text-xl font-extrabold text-slate-950">{item.title}</h2>

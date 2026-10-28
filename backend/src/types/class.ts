@@ -7,6 +7,7 @@ export type ClassListQuery = {
   limit: number;
   search?: string | undefined;
   level?: ClassLevel | undefined;
+  status?: "active" | "cancelled" | undefined;
 };
 
 export type ClassWithCountRow = {
@@ -27,6 +28,7 @@ export type ClassWithCountRow = {
   is_enrolled?: boolean;
   has_pending_payment?: boolean;
   has_paid_tuition?: boolean;
+  cancelled_at?: Date | null;
 };
 
 export type PublicClass = {
@@ -46,6 +48,7 @@ export type PublicClass = {
   isEnrolled?: boolean;
   hasPendingPayment?: boolean;
   hasPaidTuition?: boolean;
+  cancelledAt?: string | null;
 };
 
 export type CreateClassInput = {

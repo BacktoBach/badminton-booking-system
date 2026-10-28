@@ -132,11 +132,14 @@ export const enqueueClassChangeNotice = async (
     : `Thông tin lớp bạn đã đăng ký đã thay đổi.\n\n${classSummary(details)}\n\nChi tiết: ${classUrl(details.id)}`;
   await database.query(
     `INSERT INTO email_outbox (event_key, recipient_email, subject, body_text)
-     SELECT $1 || ':' || e.user_id::TEXT, u.email, $2, $3
+     SELECT $1 || ':' || e.user_id::TEXT, u.email, $2,
+            CASE WHEN $5::BOOLEAN AND e.amount_vnd > 0 THEN
+              $3 || E'\n\nHọc phí đã thanh toán sẽ được hoàn 100%. Trạng thái: chờ quản trị viên đối soát.'
+            ELSE $3 END
      FROM enrollments e JOIN users u ON u.id = e.user_id
      WHERE e.class_id = $4 AND e.payment_status = 'paid'
      ON CONFLICT (event_key) DO NOTHING`,
-    [`class:${cancelled ? "cancelled" : "changed"}:${eventId}`, subject, body, details.id],
+    [`class:${cancelled ? "cancelled" : "changed"}:${eventId}`, subject, body, details.id, cancelled],
   );
 };
 
@@ -165,7 +168,7 @@ export const enqueueDueClassReminders = async (): Promise<number> => {
      FROM classes c
      JOIN enrollments e ON e.class_id = c.id AND e.payment_status = 'paid'
      JOIN users u ON u.id = e.user_id
-     WHERE c.start_date > NOW()
+     WHERE c.cancelled_at IS NULL AND c.start_date > NOW()
        AND c.start_date <= NOW() + INTERVAL '24 hours'
      ON CONFLICT (event_key) DO NOTHING`,
   );
@@ -206,6 +209,7 @@ const isReminderCurrent = async (email: OutboxEmail): Promise<boolean> => {
      JOIN enrollments e ON e.class_id = c.id AND e.payment_status = 'paid'
      JOIN users u ON u.id = e.user_id
      WHERE c.start_date > NOW()
+       AND c.cancelled_at IS NULL
        AND u.email = $2
        AND EXISTS (SELECT 1 FROM email_outbox WHERE id = $3)
        AND 'reminder:' || c.id::TEXT || ':' || e.user_id::TEXT || ':' ||

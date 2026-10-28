@@ -111,7 +111,7 @@ export function MainLayout() {
       <footer className="mt-16 border-t border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl justify-between px-4 py-8 text-sm text-slate-500">
           <span>© 2026 ShuttleUp</span>
-          <span>Học đúng lớp. Chơi đúng trình.</span>
+          <Link to="/terms" className="hover:text-emerald-700">Điều khoản đăng ký lớp</Link>
         </div>
       </footer>
     </div>

@@ -159,7 +159,11 @@ Chạy migration `004_password_reset.sql` trước khi triển khai backend. Tr�
 
 ### Email thông báo lớp học và thanh toán
 
-Chạy migration `005_email_outbox.sql` trước khi triển khai backend. Backend dùng cùng `RESEND_API_KEY`, `MAIL_FROM` và origin của `PASSWORD_RESET_URL` để gửi link chi tiết lớp học. Mỗi sự kiện đăng ký thành công, thanh toán thành công hoặc cần kiểm tra, hết hạn giữ chỗ, đổi lịch/địa điểm và hủy lớp được ghi vào `email_outbox` cùng giao dịch dữ liệu. Backend quét lớp sắp khai giảng trong 24 giờ mỗi phút và gửi tối đa 5 email mỗi 15 giây; lỗi tạm thời được thử lại tối đa 5 lần với cùng idempotency key. Kiểm tra số bản ghi `failed_at IS NOT NULL` trong `email_outbox` khi vận hành để xử lý email gửi thất bại. Lớp đã có lịch sử thanh toán hiện không thể xóa theo quy tắc nghiệp vụ, nên thông báo hủy lớp chỉ áp dụng cho lớp miễn phí có thể xóa.
+Chạy migration `005_email_outbox.sql` trước khi triển khai backend. Backend dùng cùng `RESEND_API_KEY`, `MAIL_FROM` và origin của `PASSWORD_RESET_URL` để gửi link chi tiết lớp học. Mỗi sự kiện đăng ký thành công, thanh toán thành công hoặc cần kiểm tra, hết hạn giữ chỗ, đổi lịch/địa điểm và hủy lớp được ghi vào `email_outbox` cùng giao dịch dữ liệu. Backend quét lớp sắp khai giảng trong 24 giờ mỗi phút và gửi tối đa 5 email mỗi 15 giây; lỗi tạm thời được thử lại tối đa 5 lần với cùng idempotency key. Kiểm tra số bản ghi `failed_at IS NOT NULL` trong `email_outbox` khi vận hành để xử lý email gửi thất bại.
+
+### Chính sách hủy lớp và hoàn tiền
+
+Học viên có thể tự hủy đăng ký trước giờ khai giảng ít nhất 24 giờ. Học viên đã thanh toán cần liên hệ quản trị viên để đối soát; hệ thống không tự chuyển khoản hoàn. Khi trung tâm hủy lớp, lớp được đánh dấu đã hủy và giữ nguyên lịch sử đăng ký, thanh toán. Học viên đã thanh toán được hoàn 100% học phí đã nhận; email thông báo khoản hoàn đang chờ đối soát. Quản trị viên chuyển khoản hoàn bên ngoài hệ thống, nhập mã giao dịch và xác nhận đã hoàn trên trang học viên của lớp đã hủy. Không xác nhận trước khi tiền thực sự được chuyển. Chạy migration `006_class_cancellations.sql` trước khi deploy backend mới.
 
 ## Cài đặt local
 

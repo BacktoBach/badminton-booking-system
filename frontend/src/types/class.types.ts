@@ -23,9 +23,11 @@ export type BadmintonClass = {
   isEnrolled?: boolean
   hasPendingPayment?: boolean
   hasPaidTuition?: boolean
+  cancelledAt?: string | null
 }
 
 export type ClassListParams = {
+  status?: 'active' | 'cancelled'
   page?: number
   limit?: number
   search?: string

@@ -168,8 +168,8 @@ export const handleSePayWebhook = async (body: Buffer) => {
         [code],
       );
       if (candidate.rows[0]) {
-        const lockedClass = await client.query<{ start_date: Date }>(
-          "SELECT start_date FROM classes WHERE id = $1 FOR UPDATE",
+        const lockedClass = await client.query<{ start_date: Date; cancelled_at: Date | null }>(
+          "SELECT start_date, cancelled_at FROM classes WHERE id = $1 FOR UPDATE",
           [candidate.rows[0].class_id],
         );
         const payment = await client.query<PaymentRow>(
@@ -183,7 +183,8 @@ export const handleSePayWebhook = async (body: Buffer) => {
           row?.payment_status === "pending" &&
           row.payment_expires_at &&
           row.payment_expires_at.getTime() > Date.now() &&
-          (lockedClass.rows[0]?.start_date.getTime() ?? 0) > Date.now()
+          (lockedClass.rows[0]?.start_date.getTime() ?? 0) > Date.now() &&
+          !lockedClass.rows[0]?.cancelled_at
         ) {
           if (row.amount_vnd === event.transferAmount) {
             await client.query(
@@ -204,7 +205,8 @@ export const handleSePayWebhook = async (body: Buffer) => {
           }
         } else if (
           row?.payment_status === "pending" ||
-          row?.payment_status === "expired"
+          row?.payment_status === "expired" ||
+          row?.payment_status === "cancelled"
         ) {
           await client.query(
             "UPDATE enrollments SET payment_status = 'needs_review' WHERE class_id = $1 AND user_id = $2",

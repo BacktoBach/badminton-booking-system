@@ -25,9 +25,7 @@ test.describe("Booking business rules", () => {
     await expect(
       page.getByText("Lớp đã bắt đầu", { exact: true }).first(),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Lớp đã bắt đầu" }),
-    ).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Hủy đăng ký" })).toHaveCount(0);
     await page.goto("/my-classes?status=past&page=1");
     await expect(
       page.getByRole("heading", { name: seededClasses.past.title }),
