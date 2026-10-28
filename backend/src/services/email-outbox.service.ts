@@ -19,26 +19,32 @@ type OutboxEmail = {
   attempts: number;
 };
 
-const formatDate = (date: Date) => new Intl.DateTimeFormat("vi-VN", {
-  timeZone: "Asia/Ho_Chi_Minh",
-  dateStyle: "full",
-  timeStyle: "short",
-}).format(date);
+const formatDate = (date: Date) =>
+  new Intl.DateTimeFormat("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    dateStyle: "full",
+    timeStyle: "short",
+  }).format(date);
 
 const classSummary = (details: ClassEmailDetails) =>
   `Lớp: ${details.title}\nKhai giảng: ${formatDate(details.startDate)}\nLịch học: ${details.schedule}\nĐịa điểm: ${details.location}`;
 
 const classUrl = (classId: string) => {
-  const base = new URL(env.PASSWORD_RESET_URL ?? "http://localhost:5173/reset-password");
+  const base = new URL(
+    env.PASSWORD_RESET_URL ?? "http://localhost:5173/reset-password",
+  );
   return new URL(`/classes/${classId}`, base.origin).toString();
 };
 
-const enqueueEmail = async (database: DatabaseClient, input: {
-  eventKey: string;
-  recipientEmail: string;
-  subject: string;
-  bodyText: string;
-}): Promise<void> => {
+const enqueueEmail = async (
+  database: DatabaseClient,
+  input: {
+    eventKey: string;
+    recipientEmail: string;
+    subject: string;
+    bodyText: string;
+  },
+): Promise<void> => {
   await database.query(
     `INSERT INTO email_outbox (event_key, recipient_email, subject, body_text)
      VALUES ($1, $2, $3, $4) ON CONFLICT (event_key) DO NOTHING`,
@@ -85,6 +91,40 @@ export const enqueueEnrollmentConfirmation = async (
   });
 };
 
+export const enqueueWaitlistOffer = async (
+  database: DatabaseClient,
+  classId: string,
+  userId: string,
+  expiresAt: Date,
+): Promise<void> => {
+  const result = await database.query<{
+    email: string;
+    title: string;
+    start_date: Date;
+    schedule: string;
+    location: string;
+  }>(
+    `SELECT u.email, c.title, c.start_date, c.schedule, c.location
+     FROM users u JOIN classes c ON c.id = $1 WHERE u.id = $2 AND c.cancelled_at IS NULL`,
+    [classId, userId],
+  );
+  const row = result.rows[0];
+  if (!row) return;
+  const details = {
+    id: classId,
+    title: row.title,
+    startDate: row.start_date,
+    schedule: row.schedule,
+    location: row.location,
+  };
+  await enqueueEmail(database, {
+    eventKey: `waitlist-offer:${classId}:${userId}:${expiresAt.toISOString()}`,
+    recipientEmail: row.email,
+    subject: `Có chỗ trống trong lớp ${row.title}`,
+    bodyText: `Bạn là người tiếp theo trong danh sách chờ và được giữ chỗ đến ${formatDate(expiresAt)}. Hãy đăng nhập để xác nhận trước thời hạn; sau đó chỗ sẽ được mời cho người tiếp theo.\n\n${classSummary(details)}\n\nChi tiết: ${classUrl(classId)}`,
+  });
+};
+
 export const enqueuePaymentNotice = async (
   database: DatabaseClient,
   classId: string,
@@ -92,7 +132,11 @@ export const enqueuePaymentNotice = async (
   paymentCode: string,
   outcome: "paid" | "needs_review" | "expired",
 ): Promise<void> => {
-  const result = await database.query<{ email: string; title: string; amount_vnd: number }>(
+  const result = await database.query<{
+    email: string;
+    title: string;
+    amount_vnd: number;
+  }>(
     `SELECT u.email, c.title, e.amount_vnd
      FROM enrollments e JOIN users u ON u.id = e.user_id
      JOIN classes c ON c.id = e.class_id
@@ -102,16 +146,18 @@ export const enqueuePaymentNotice = async (
   const row = result.rows[0];
   if (!row) return;
   const amount = new Intl.NumberFormat("vi-VN").format(row.amount_vnd);
-  const status = outcome === "paid"
-    ? "Thanh toán thành công"
-    : outcome === "expired"
-      ? "Hết hạn thanh toán"
-      : "Thanh toán cần được kiểm tra";
-  const instruction = outcome === "paid"
-    ? "Chỗ học của bạn đã được xác nhận."
-    : outcome === "expired"
-      ? "Chỗ giữ tạm đã hết hạn. Bạn có thể đăng ký lại nếu lớp còn chỗ."
-      : "Khoản chuyển của bạn cần quản trị viên kiểm tra. Vui lòng không chuyển lại trước khi được xác nhận.";
+  const status =
+    outcome === "paid"
+      ? "Thanh toán thành công"
+      : outcome === "expired"
+        ? "Hết hạn thanh toán"
+        : "Thanh toán cần được kiểm tra";
+  const instruction =
+    outcome === "paid"
+      ? "Chỗ học của bạn đã được xác nhận."
+      : outcome === "expired"
+        ? "Chỗ giữ tạm đã hết hạn. Bạn có thể đăng ký lại nếu lớp còn chỗ."
+        : "Khoản chuyển của bạn cần quản trị viên kiểm tra. Vui lòng không chuyển lại trước khi được xác nhận.";
   await enqueueEmail(database, {
     eventKey: `payment:${outcome}:${paymentCode}`,
     recipientEmail: row.email,
@@ -126,7 +172,9 @@ export const enqueueClassChangeNotice = async (
   eventId: string,
   cancelled: boolean,
 ): Promise<void> => {
-  const subject = cancelled ? `Lớp ${details.title} đã bị hủy` : `Lịch hoặc địa điểm lớp ${details.title} đã thay đổi`;
+  const subject = cancelled
+    ? `Lớp ${details.title} đã bị hủy`
+    : `Lịch hoặc địa điểm lớp ${details.title} đã thay đổi`;
   const body = cancelled
     ? `Lớp bạn đã đăng ký bị hủy.\n\n${classSummary(details)}\n\nVui lòng liên hệ quản trị viên nếu cần hỗ trợ.`
     : `Thông tin lớp bạn đã đăng ký đã thay đổi.\n\n${classSummary(details)}\n\nChi tiết: ${classUrl(details.id)}`;
@@ -139,7 +187,13 @@ export const enqueueClassChangeNotice = async (
      FROM enrollments e JOIN users u ON u.id = e.user_id
      WHERE e.class_id = $4 AND e.payment_status = 'paid'
      ON CONFLICT (event_key) DO NOTHING`,
-    [`class:${cancelled ? "cancelled" : "changed"}:${eventId}`, subject, body, details.id, cancelled],
+    [
+      `class:${cancelled ? "cancelled" : "changed"}:${eventId}`,
+      subject,
+      body,
+      details.id,
+      cancelled,
+    ],
   );
 };
 
@@ -202,7 +256,22 @@ const claimEmails = async (): Promise<OutboxEmail[]> => {
   return result.rows;
 };
 
-const isReminderCurrent = async (email: OutboxEmail): Promise<boolean> => {
+const isNotificationCurrent = async (email: OutboxEmail): Promise<boolean> => {
+  if (email.event_key.startsWith("waitlist-offer:")) {
+    const [, classId, userId] = email.event_key.split(":");
+    if (!classId || !userId) return false;
+    const result = await pool.query(
+      `SELECT 1 FROM class_waitlist w
+       JOIN classes c ON c.id = w.class_id
+       JOIN users u ON u.id = w.user_id
+       WHERE w.class_id = $1::UUID AND w.user_id = $2::UUID
+         AND w.status = 'offered' AND w.offer_expires_at > NOW()
+         AND c.cancelled_at IS NULL AND u.email = $3
+       LIMIT 1`,
+      [classId, userId, email.recipient_email],
+    );
+    return result.rowCount === 1;
+  }
   if (!email.event_key.startsWith("reminder:")) return true;
   const result = await pool.query(
     `SELECT 1 FROM classes c
@@ -237,8 +306,12 @@ const sendEmail = async (email: OutboxEmail): Promise<void> => {
     signal: AbortSignal.timeout(10_000),
   });
   if (!response.ok) {
-    const error = new Error(`Resend rejected notification (${response.status})`);
-    Object.assign(error, { retryable: response.status === 429 || response.status >= 500 });
+    const error = new Error(
+      `Resend rejected notification (${response.status})`,
+    );
+    Object.assign(error, {
+      retryable: response.status === 429 || response.status >= 500,
+    });
     throw error;
   }
 };
@@ -248,7 +321,7 @@ export const processEmailOutbox = async (): Promise<number> => {
   const emails = await claimEmails();
   for (const email of emails) {
     try {
-      if (!(await isReminderCurrent(email))) {
+      if (!(await isNotificationCurrent(email))) {
         await pool.query(
           "UPDATE email_outbox SET failed_at = NOW(), lease_until = NULL WHERE id = $1",
           [email.id],
@@ -261,7 +334,11 @@ export const processEmailOutbox = async (): Promise<number> => {
         [email.id],
       );
     } catch (error) {
-      const retryable = !(error instanceof Error && "retryable" in error && error.retryable === false);
+      const retryable = !(
+        error instanceof Error &&
+        "retryable" in error &&
+        error.retryable === false
+      );
       const failed = !retryable || email.attempts >= 5;
       await pool.query(
         `UPDATE email_outbox

@@ -145,7 +145,7 @@ Request/response đầy đủ nằm trong [API contract](backend/docs/API_CONTRA
 | `401` | `AUTH_REQUIRED`, `INVALID_TOKEN`, `TOKEN_REVOKED`, `INVALID_CREDENTIALS`              | Thiếu cookie, token sai/hết hạn/bị thu hồi hoặc đăng nhập sai |
 | `403` | `FORBIDDEN`                                                                           | Role hoặc browser Origin không được phép                      |
 | `404` | `CLASS_NOT_FOUND`, `ENROLLMENT_NOT_FOUND`, `ROUTE_NOT_FOUND`                          | Resource hoặc route không tồn tại                             |
-| `409` | `EMAIL_ALREADY_EXISTS`, `DUPLICATE_ENROLLMENT`, `CLASS_FULL`, `CLASS_ALREADY_STARTED` | Xung đột dữ liệu hoặc business rule                           |
+| `409` | `EMAIL_ALREADY_EXISTS`, `DUPLICATE_ENROLLMENT`, `CLASS_FULL`, `CLASS_ALREADY_STARTED`, `CLASS_NOT_FULL`, `DUPLICATE_WAITLIST`, `WAITLIST_OFFER_EXPIRED` | Xung đột dữ liệu hoặc business rule |
 | `409` | `CAPACITY_BELOW_CURRENT_ENROLLMENTS`                                                  | Giảm capacity thấp hơn số học viên hiện tại                   |
 | `413` | `PAYLOAD_TOO_LARGE`                                                                   | JSON vượt giới hạn 10 KB                                      |
 | `429` | `TOO_MANY_REQUESTS`                                                                   | Vượt giới hạn tần suất; xem header `Retry-After`              |
@@ -160,6 +160,10 @@ Chạy migration `004_password_reset.sql` trước khi triển khai backend. Tr�
 ### Email thông báo lớp học và thanh toán
 
 Chạy migration `005_email_outbox.sql` trước khi triển khai backend. Backend dùng cùng `RESEND_API_KEY`, `MAIL_FROM` và origin của `PASSWORD_RESET_URL` để gửi link chi tiết lớp học. Mỗi sự kiện đăng ký thành công, thanh toán thành công hoặc cần kiểm tra, hết hạn giữ chỗ, đổi lịch/địa điểm và hủy lớp được ghi vào `email_outbox` cùng giao dịch dữ liệu. Backend quét lớp sắp khai giảng trong 24 giờ mỗi phút và gửi tối đa 5 email mỗi 15 giây; lỗi tạm thời được thử lại tối đa 5 lần với cùng idempotency key. Kiểm tra số bản ghi `failed_at IS NOT NULL` trong `email_outbox` khi vận hành để xử lý email gửi thất bại.
+
+### Danh sách chờ lớp học
+
+Chạy migration `007_waitlist.sql` trước khi triển khai backend. Học viên có thể tham gia danh sách chờ khi lớp đã đủ chỗ; thứ tự được giữ theo thời điểm tham gia. Khi có chỗ trống, backend giữ chỗ cho người tiếp theo trong 2 giờ và gửi email qua outbox. Học viên xác nhận trên trang chi tiết lớp hoặc mục “Lớp của tôi”; lớp thu phí tiếp tục quy trình thanh toán hiện tại với thời hạn thanh toán 15 phút. Các lượt giữ chỗ đang chờ xác nhận được tính vào sức chứa và được bảo vệ bằng khóa transaction cùng database trigger. Worker backend kiểm tra lời mời hết hạn mỗi 30 giây.
 
 ### Chính sách hủy lớp và hoàn tiền
 

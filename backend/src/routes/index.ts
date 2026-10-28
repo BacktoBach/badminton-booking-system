@@ -6,6 +6,7 @@ import { adminRouter } from "./admin.routes.js";
 import { enrollmentRouter } from "./enrollment.routes.js";
 import { swaggerRouter } from "./swagger.routes.js";
 import { paymentRouter } from "./payment.routes.js";
+import { waitlistRouter } from "./waitlist.routes.js";
 
 export const apiRouter = Router();
 
@@ -16,3 +17,4 @@ apiRouter.use("/classes", classRouter);
 apiRouter.use("/admin", adminRouter);
 apiRouter.use("/enrollments", enrollmentRouter);
 apiRouter.use("/payments", paymentRouter);
+apiRouter.use("/waitlist", waitlistRouter);

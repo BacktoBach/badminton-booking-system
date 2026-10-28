@@ -4,6 +4,7 @@ import { classPaths } from "./paths/class.paths.js";
 import { enrollmentPaths } from "./paths/enrollment.paths.js";
 import { healthPaths } from "./paths/health.paths.js";
 import { paymentPaths } from "./paths/payment.paths.js";
+import { waitlistPaths } from "./paths/waitlist.paths.js";
 import { components } from "./components.js";
 
 export const openApiDocument = {
@@ -20,11 +21,24 @@ export const openApiDocument = {
   servers: [{ url: "/", description: "Current server" }],
   tags: [
     { name: "Health", description: "API and PostgreSQL readiness" },
-    { name: "Authentication", description: "Registration and HTTP-only cookie sessions" },
-    { name: "Classes", description: "Public catalog and admin class management" },
+    {
+      name: "Authentication",
+      description: "Registration and HTTP-only cookie sessions",
+    },
+    {
+      name: "Classes",
+      description: "Public catalog and admin class management",
+    },
     { name: "Enrollments", description: "User enrollment workflows" },
     { name: "Admin", description: "Administrator-only views" },
-    { name: "Payments", description: "Bank-transfer payment state and SePay webhook" },
+    {
+      name: "Payments",
+      description: "Bank-transfer payment state and SePay webhook",
+    },
+    {
+      name: "Waitlist",
+      description: "FIFO waitlist and time-limited place offers",
+    },
   ],
   paths: {
     ...healthPaths,
@@ -33,6 +47,7 @@ export const openApiDocument = {
     ...enrollmentPaths,
     ...adminPaths,
     ...paymentPaths,
+    ...waitlistPaths,
   },
   components,
 } as const;

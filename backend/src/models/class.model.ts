@@ -10,7 +10,8 @@ import type {
 
 type CountRow = { total: number };
 type ClassStartDateRow = { start_date: Date };
-const activeEnrollment = "(e.payment_status = 'paid' OR (e.payment_status = 'pending' AND e.payment_expires_at > NOW()))";
+const activeEnrollment =
+  "(e.payment_status = 'paid' OR (e.payment_status = 'pending' AND e.payment_expires_at > NOW()))";
 
 const escapeLikePattern = (value: string): string =>
   value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
@@ -47,7 +48,8 @@ export const listUpcomingClasses = async (
           c.id, c.title, c.description, c.coach_name, c.level, c.start_date,
           c.schedule, c.location, c.max_students, c.tuition_vnd, c.created_by_id,
           c.created_at, c.updated_at, c.cancelled_at,
-          COUNT(e.user_id)::INTEGER AS current_students
+          (COUNT(e.user_id) + (SELECT COUNT(*) FROM class_waitlist w WHERE w.class_id = c.id
+             AND w.status = 'offered' AND w.offer_expires_at > NOW()))::INTEGER AS current_students
         FROM classes c
         LEFT JOIN enrollments e ON e.class_id = c.id AND ${activeEnrollment}
         WHERE ${filter.where}
@@ -57,7 +59,10 @@ export const listUpcomingClasses = async (
       `,
       [...filter.values, query.limit, offset],
     ),
-    database.query<CountRow>(`SELECT COUNT(*)::INTEGER AS total FROM classes c WHERE ${filter.where}`, filter.values),
+    database.query<CountRow>(
+      `SELECT COUNT(*)::INTEGER AS total FROM classes c WHERE ${filter.where}`,
+      filter.values,
+    ),
   ]);
 
   return { rows: classesResult.rows, total: countResult.rows[0]?.total ?? 0 };
@@ -74,7 +79,8 @@ export const findPublicClassById = async (
         c.id, c.title, c.description, c.coach_name, c.level, c.start_date,
         c.schedule, c.location, c.max_students, c.tuition_vnd, c.created_by_id,
         c.created_at, c.updated_at, c.cancelled_at,
-        COUNT(e.user_id)::INTEGER AS current_students,
+        (COUNT(e.user_id) + (SELECT COUNT(*) FROM class_waitlist w WHERE w.class_id = c.id
+           AND w.status = 'offered' AND w.offer_expires_at > NOW()))::INTEGER AS current_students,
         EXISTS (
           SELECT 1
           FROM enrollments viewer_enrollment
@@ -110,7 +116,11 @@ export const listAdminClasses = async (
   database: DatabaseClient,
   query: ClassListQuery,
 ): Promise<{ rows: ClassWithCountRow[]; total: number }> => {
-  const conditions: string[] = [query.status === "cancelled" ? "c.cancelled_at IS NOT NULL" : "c.cancelled_at IS NULL"];
+  const conditions: string[] = [
+    query.status === "cancelled"
+      ? "c.cancelled_at IS NOT NULL"
+      : "c.cancelled_at IS NULL",
+  ];
   const values: unknown[] = [];
   if (query.search) {
     values.push(`%${escapeLikePattern(query.search)}%`);
@@ -120,7 +130,8 @@ export const listAdminClasses = async (
     values.push(query.level);
     conditions.push(`c.level = $${values.length}`);
   }
-  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const where =
+    conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
   const limitPosition = values.length + 1;
   const offsetPosition = values.length + 2;
 
@@ -128,7 +139,9 @@ export const listAdminClasses = async (
     database.query<ClassWithCountRow>(
       `SELECT c.id, c.title, c.description, c.coach_name, c.level, c.start_date,
               c.schedule, c.location, c.max_students, c.tuition_vnd, c.created_by_id,
-              c.created_at, c.updated_at, c.cancelled_at, COUNT(e.user_id)::INTEGER AS current_students
+              c.created_at, c.updated_at, c.cancelled_at,
+              (COUNT(e.user_id) + (SELECT COUNT(*) FROM class_waitlist w WHERE w.class_id = c.id
+                 AND w.status = 'offered' AND w.offer_expires_at > NOW()))::INTEGER AS current_students
        FROM classes c
        LEFT JOIN enrollments e ON e.class_id = c.id AND ${activeEnrollment}
        ${where}
@@ -137,7 +150,10 @@ export const listAdminClasses = async (
        LIMIT $${limitPosition} OFFSET $${offsetPosition}`,
       [...values, query.limit, (query.page - 1) * query.limit],
     ),
-    database.query<CountRow>(`SELECT COUNT(*)::INTEGER AS total FROM classes c ${where}`, values),
+    database.query<CountRow>(
+      `SELECT COUNT(*)::INTEGER AS total FROM classes c ${where}`,
+      values,
+    ),
   ]);
   return { rows: classesResult.rows, total: countResult.rows[0]?.total ?? 0 };
 };
@@ -173,9 +189,10 @@ export const findClassStartDateForUpdate = async (
   database: DatabaseClient,
   classId: string,
 ): Promise<ClassStartDateRow | null> => {
-  const result = await database.query<ClassStartDateRow>("SELECT start_date FROM classes WHERE id = $1 FOR UPDATE", [
-    classId,
-  ]);
+  const result = await database.query<ClassStartDateRow>(
+    "SELECT start_date FROM classes WHERE id = $1 FOR UPDATE",
+    [classId],
+  );
   return result.rows[0] ?? null;
 };
 
@@ -196,7 +213,9 @@ export const updateClass = async (
     tuitionVnd: "tuition_vnd",
   };
   const entries = Object.entries(input) as [keyof CreateClassInput, unknown][];
-  const assignments = entries.map(([field], index) => `${columnByField[field]} = $${index + 1}`);
+  const assignments = entries.map(
+    ([field], index) => `${columnByField[field]} = $${index + 1}`,
+  );
   const values = entries.map(([, value]) => value);
   const result = await database.query<ClassWithCountRow>(
     `UPDATE classes c
@@ -208,8 +227,13 @@ export const updateClass = async (
   return result.rows[0] ?? null;
 };
 
-export const deleteClass = async (database: DatabaseClient, classId: string): Promise<boolean> => {
-  const result = await database.query("DELETE FROM classes WHERE id = $1", [classId]);
+export const deleteClass = async (
+  database: DatabaseClient,
+  classId: string,
+): Promise<boolean> => {
+  const result = await database.query("DELETE FROM classes WHERE id = $1", [
+    classId,
+  ]);
   return result.rowCount === 1;
 };
 
