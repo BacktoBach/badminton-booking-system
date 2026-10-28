@@ -16,7 +16,7 @@ const escapeLikePattern = (value: string): string =>
   value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
 
 const buildUpcomingFilter = (query: ClassListQuery) => {
-  const conditions = ["c.start_date > NOW()"];
+  const conditions = ["c.start_date > NOW()", "c.cancelled_at IS NULL"];
   const values: unknown[] = [];
 
   if (query.search) {
@@ -46,7 +46,7 @@ export const listUpcomingClasses = async (
         SELECT
           c.id, c.title, c.description, c.coach_name, c.level, c.start_date,
           c.schedule, c.location, c.max_students, c.tuition_vnd, c.created_by_id,
-          c.created_at, c.updated_at,
+          c.created_at, c.updated_at, c.cancelled_at,
           COUNT(e.user_id)::INTEGER AS current_students
         FROM classes c
         LEFT JOIN enrollments e ON e.class_id = c.id AND ${activeEnrollment}
@@ -73,7 +73,7 @@ export const findPublicClassById = async (
       SELECT
         c.id, c.title, c.description, c.coach_name, c.level, c.start_date,
         c.schedule, c.location, c.max_students, c.tuition_vnd, c.created_by_id,
-        c.created_at, c.updated_at,
+        c.created_at, c.updated_at, c.cancelled_at,
         COUNT(e.user_id)::INTEGER AS current_students,
         EXISTS (
           SELECT 1
@@ -110,7 +110,7 @@ export const listAdminClasses = async (
   database: DatabaseClient,
   query: ClassListQuery,
 ): Promise<{ rows: ClassWithCountRow[]; total: number }> => {
-  const conditions: string[] = [];
+  const conditions: string[] = [query.status === "cancelled" ? "c.cancelled_at IS NOT NULL" : "c.cancelled_at IS NULL"];
   const values: unknown[] = [];
   if (query.search) {
     values.push(`%${escapeLikePattern(query.search)}%`);
@@ -128,7 +128,7 @@ export const listAdminClasses = async (
     database.query<ClassWithCountRow>(
       `SELECT c.id, c.title, c.description, c.coach_name, c.level, c.start_date,
               c.schedule, c.location, c.max_students, c.tuition_vnd, c.created_by_id,
-              c.created_at, c.updated_at, COUNT(e.user_id)::INTEGER AS current_students
+              c.created_at, c.updated_at, c.cancelled_at, COUNT(e.user_id)::INTEGER AS current_students
        FROM classes c
        LEFT JOIN enrollments e ON e.class_id = c.id AND ${activeEnrollment}
        ${where}

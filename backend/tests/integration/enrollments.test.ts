@@ -141,6 +141,7 @@ describe("enrollment API", () => {
       ownerId: adminId,
       title: "Cancel Class",
       maxStudents: 2,
+      startsInHours: 48,
     });
     await pool.query("INSERT INTO enrollments (class_id, user_id) VALUES ($1, $2)", [classId, userId]);
 
@@ -182,6 +183,19 @@ describe("enrollment API", () => {
       [classId, userId],
     );
     expect(stored.rowCount).toBe(1);
+  });
+
+  it("rejects cancellation within 24 hours of the class start", async () => {
+    const classId = await insertTestClass(pool, {
+      ownerId: adminId,
+      title: "Late Cancellation",
+      startsInHours: 12,
+    });
+    await pool.query("INSERT INTO enrollments (class_id, user_id) VALUES ($1, $2)", [classId, userId]);
+    const response = await request(app).delete(`/api/classes/${classId}/enrollments`).set("Cookie", userCookie);
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe("CANCELLATION_DEADLINE_PASSED");
+    expect((await pool.query("SELECT 1 FROM enrollments WHERE class_id = $1 AND user_id = $2", [classId, userId])).rowCount).toBe(1);
   });
 
   it("lists only the user's classes with status filtering and live counts", async () => {

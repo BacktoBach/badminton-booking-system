@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../config/axios'
+import { useToast } from '../../contexts/ToastContext'
 import {
   EmptyState,
   ErrorState,
@@ -17,6 +18,27 @@ import { readPositivePage, SEARCH_MAX_LENGTH } from '../../utils/search-params'
 
 export function StudentsPage() {
   const { classId = '' } = useParams()
+  const queryClient = useQueryClient()
+  const { showToast } = useToast()
+  const refund = useMutation({
+    mutationFn: async ({ userId, reference }: { userId: string; reference: string }) => {
+      await apiClient.post(`/admin/classes/${classId}/refunds/${userId}`, { reference })
+    },
+    onSuccess: () => {
+      showToast('Đã ghi nhận khoản hoàn tiền.')
+      return queryClient.invalidateQueries({ queryKey: ['admin', 'class-payments', classId] })
+    },
+    onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }),
+  })
+  const confirmRefund = (userId: string) => {
+    const reference = window.prompt('Nhập mã giao dịch hoàn tiền đã chuyển cho học viên:')?.trim()
+    if (!reference) return
+    if (reference.length < 3 || reference.length > 120) {
+      showToast({ type: 'error', message: 'Mã giao dịch phải dài từ 3 đến 120 ký tự.' })
+      return
+    }
+    refund.mutate({ userId, reference })
+  }
   const payments = useQuery({
     queryKey: ['admin', 'class-payments', classId],
     queryFn: async () =>
@@ -31,6 +53,9 @@ export function StudentsPage() {
             paymentCode: string | null
             expiresAt: string | null
             paidAt: string | null
+            refundStatus: 'pending' | 'refunded' | null
+            refundReference: string | null
+            refundedAt: string | null
           }>
         }>(`/admin/classes/${classId}/payments`)
       ).data.data,
@@ -127,6 +152,7 @@ export function StudentsPage() {
                     <th>Học phí</th>
                     <th>Trạng thái</th>
                     <th>Mã chuyển khoản</th>
+                    <th>Hoàn tiền</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -137,6 +163,13 @@ export function StudentsPage() {
                       <td>{payment.amountVnd.toLocaleString('vi-VN')} ₫</td>
                       <td>{payment.status}</td>
                       <td className="font-mono">{payment.paymentCode ?? '—'}</td>
+                      <td>
+                        {payment.refundStatus === 'pending' ? (
+                          <button disabled={refund.isPending} className="font-semibold text-emerald-700" onClick={() => confirmRefund(payment.userId)}>Chờ đối soát · Xác nhận đã hoàn</button>
+                        ) : payment.refundStatus === 'refunded' ? (
+                          <span>Đã hoàn · {payment.refundReference}</span>
+                        ) : '—'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

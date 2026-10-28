@@ -20,7 +20,8 @@ export function AdminClassesPage() {
   const { params, search, searchParam, setParams, setSearch } = useDebouncedSearchParam()
   const page = readPositivePage(params.get('page'))
   const level = readClassLevel(params.get('level'))
-  const query = useAdminClasses({ page, limit: 9, level, search: searchParam || undefined })
+  const status = params.get('status') === 'cancelled' ? 'cancelled' : 'active'
+  const query = useAdminClasses({ page, limit: 9, level, status, search: searchParam || undefined })
   const isUpdating = query.isFetching && query.isPlaceholderData
   const remove = useDeleteClass()
   const { showToast } = useToast()
@@ -39,9 +40,9 @@ export function AdminClassesPage() {
   )
 
   const deleteClass = (id: string, title: string) => {
-    if (!window.confirm(`Xóa lớp “${title}” và toàn bộ đăng ký liên quan?`)) return
+    if (!window.confirm(`Hủy lớp “${title}”? Học viên sẽ được thông báo và các khoản đã thanh toán sẽ chờ đối soát hoàn tiền.`)) return
     remove.mutate(id, {
-      onSuccess: () => showToast('Đã xóa lớp học.'),
+      onSuccess: () => showToast('Đã hủy lớp học.'),
       onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }),
     })
   }
@@ -97,6 +98,11 @@ export function AdminClassesPage() {
         </select>
       </div>
 
+      <div className="mt-4 flex gap-4">
+        <button className={status === 'active' ? 'font-bold text-emerald-700' : ''} onClick={() => updateParams({ status: undefined })}>Lớp đang hoạt động</button>
+        <button className={status === 'cancelled' ? 'font-bold text-emerald-700' : ''} onClick={() => updateParams({ status: 'cancelled' })}>Lớp đã hủy</button>
+      </div>
+
       <div className="mt-6">
         <UpdatingContent updating={isUpdating} label="Đang cập nhật danh sách quản trị">
           {query.isPending ? (
@@ -142,21 +148,21 @@ export function AdminClassesPage() {
                           >
                             <Users size={18} />
                           </Link>
-                          <Link
+                          {status === 'active' && <Link
                             aria-label={`Chỉnh sửa lớp ${item.title}`}
                             className="rounded-lg border p-2"
                             to={`/admin/classes/${item.id}/edit`}
                           >
                             <Pencil size={18} />
-                          </Link>
-                          <button
-                            aria-label={`Xóa lớp ${item.title}`}
+                          </Link>}
+                          {status === 'active' && <button
+                            aria-label={`Hủy lớp ${item.title}`}
                             className="rounded-lg border p-2 text-rose-600"
                             disabled={remove.isPending}
                             onClick={() => deleteClass(item.id, item.title)}
                           >
                             <Trash2 size={18} />
-                          </button>
+                          </button>}
                         </div>
                       </td>
                     </tr>

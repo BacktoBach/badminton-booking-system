@@ -12,13 +12,13 @@ import { useToast } from '../../contexts/ToastContext'
 import { useCancelEnrollment, useMyEnrollments } from '../../hooks/enrollments/useEnrollments'
 import { usePaginationBounds } from '../../hooks/usePaginationBounds'
 import { getErrorMessage } from '../../utils/api-error'
-import { hasStarted } from '../../utils/date'
+import { canCancelEnrollment } from '../../utils/date'
 import { readEnrollmentStatus, readPositivePage } from '../../utils/search-params'
 
 function EnrollmentItem({ item }: { item: Parameters<typeof ClassCard>[0]['item'] }) {
   const cancel = useCancelEnrollment(item.id)
   const { showToast } = useToast()
-  const started = hasStarted(item.startDate)
+  const canCancel = canCancelEnrollment(item.startDate)
   const handleCancel = () => {
     if (!window.confirm(`Hủy đăng ký lớp “${item.title}”?`)) return
     cancel.mutate(undefined, {
@@ -29,7 +29,8 @@ function EnrollmentItem({ item }: { item: Parameters<typeof ClassCard>[0]['item'
   return (
     <div>
       <ClassCard item={item} />
-      {!started && (
+      {item.cancelledAt && <p className="mt-2 font-semibold text-rose-700">Lớp đã hủy. Học phí đã thanh toán đang chờ đối soát hoàn tiền.</p>}
+      {canCancel && !item.cancelledAt && (
         <Button
           variant="danger"
           className="mt-2 w-full"

@@ -5,7 +5,6 @@ import { hasPostgresConstraint } from "../database/postgres-error.js";
 import { withTransaction } from "../database/transaction.js";
 import {
   createClass,
-  deleteClass,
   findPublicClassById,
   listAdminClasses,
   listClassStudents,
@@ -66,6 +65,8 @@ export const updateAdminClass = async (classId: string, input: UpdateClassInput)
       );
       const before = previous.rows[0];
       if (!before) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
+      const cancellation = await client.query("SELECT cancelled_at FROM classes WHERE id = $1", [classId]);
+      if (cancellation.rows[0]?.cancelled_at) throw new AppError(409, "CLASS_ALREADY_CANCELLED", "Class was already cancelled");
       if (input.startDate !== undefined) {
         if (before.start_date.getTime() <= Date.now()) {
           throw new AppError(
@@ -111,12 +112,8 @@ export const deleteAdminClass = async (classId: string): Promise<void> => {
     );
     const details = classRecord.rows[0];
     if (!details) throw new AppError(404, "CLASS_NOT_FOUND", "Class was not found");
-    const history = await client.query(
-      "SELECT 1 FROM enrollments WHERE class_id = $1 AND amount_vnd > 0 LIMIT 1", [classId],
-    );
-    if (history.rowCount) {
-      throw new AppError(409, "CLASS_HAS_PAYMENT_HISTORY", "Classes with payment history cannot be deleted");
-    }
+    const cancelled = await client.query("SELECT cancelled_at FROM classes WHERE id = $1", [classId]);
+    if (cancelled.rows[0]?.cancelled_at) throw new AppError(409, "CLASS_ALREADY_CANCELLED", "Class was already cancelled");
     await discardPendingReminders(client, classId);
     await enqueueClassChangeNotice(client, {
       id: details.id,
@@ -125,7 +122,13 @@ export const deleteAdminClass = async (classId: string): Promise<void> => {
       schedule: details.schedule,
       location: details.location,
     }, randomUUID(), true);
-    await deleteClass(client, classId);
+    await client.query("UPDATE classes SET cancelled_at = NOW() WHERE id = $1", [classId]);
+    await client.query("UPDATE enrollments SET payment_status = 'cancelled' WHERE class_id = $1 AND payment_status = 'pending'", [classId]);
+    await client.query(
+      `UPDATE enrollments SET refund_status = 'pending'
+       WHERE class_id = $1 AND payment_status = 'paid' AND amount_vnd > 0`,
+      [classId],
+    );
   });
 };
 

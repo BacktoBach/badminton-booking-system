@@ -60,3 +60,8 @@ export const hasStarted = (value: string) => {
   const date = parseDate(value)
   return date ? date.getTime() <= Date.now() : false
 }
+
+export const canCancelEnrollment = (value: string) => {
+  const date = parseDate(value)
+  return date !== null && date.getTime() - Date.now() >= 24 * 60 * 60 * 1000
+}

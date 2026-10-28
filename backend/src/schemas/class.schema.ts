@@ -58,7 +58,7 @@ export const updateClassSchema = z
   .strict()
   .refine((value) => Object.keys(value).length > 0, "At least one field is required");
 
-export const adminClassListQuerySchema = classListQuerySchema;
+export const adminClassListQuerySchema = classListQuerySchema.safeExtend({ status: z.enum(["active", "cancelled"]).default("active") });
 
 export const studentListQuerySchema = z
   .object({

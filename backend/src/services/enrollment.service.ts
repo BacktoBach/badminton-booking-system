@@ -48,6 +48,9 @@ const mapEnrollmentDatabaseError = (error: unknown): never => {
         "This class has already started",
       );
     }
+    if (error.message === "CLASS_CANCELLED") {
+      throw new AppError(409, "CLASS_CANCELLED", "This class has been cancelled");
+    }
   }
   throw error;
 };
@@ -66,6 +69,8 @@ export const enrollInClass = async (classId: string, userId: string) => {
   try {
     return await withTransaction(async (client) => {
       const classRecord = await requireLockedClass(classId, client);
+      const cancellation = await client.query("SELECT cancelled_at FROM classes WHERE id = $1", [classId]);
+      if (cancellation.rows[0]?.cancelled_at) throw new AppError(409, "CLASS_CANCELLED", "This class has been cancelled");
       if (classRecord.start_date.getTime() <= Date.now()) {
         throw new AppError(
           409,
@@ -133,12 +138,17 @@ export const enrollInClass = async (classId: string, userId: string) => {
 export const cancelClassEnrollment = async (classId: string, userId: string) =>
   withTransaction(async (client) => {
     const classRecord = await requireLockedClass(classId, client);
+    const cancellation = await client.query("SELECT cancelled_at FROM classes WHERE id = $1", [classId]);
+    if (cancellation.rows[0]?.cancelled_at) throw new AppError(409, "CLASS_CANCELLED", "This class has been cancelled");
     if (classRecord.start_date.getTime() <= Date.now()) {
       throw new AppError(
         409,
         "CLASS_ALREADY_STARTED",
         "Cannot cancel enrollment for a class that has already started",
       );
+    }
+    if (classRecord.start_date.getTime() - Date.now() < 24 * 60 * 60 * 1000) {
+      throw new AppError(409, "CANCELLATION_DEADLINE_PASSED", "Enrollment can only be cancelled at least 24 hours before the class starts");
     }
     const payment = await client.query<{
       amount_vnd: number;

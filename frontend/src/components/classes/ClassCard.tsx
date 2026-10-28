@@ -19,7 +19,7 @@ export function ClassCard({ item }: { item: BadmintonClass }) {
         <span
           className={`rounded-full px-3 py-1 text-xs font-semibold ${item.isFull ? 'bg-rose-50 text-rose-700' : started ? 'bg-slate-100 text-slate-600' : 'bg-lime-100 text-lime-800'}`}
         >
-          {item.isFull ? 'Đã đầy' : started ? 'Đã bắt đầu' : `Còn ${item.availableSlots} chỗ`}
+          {item.cancelledAt ? 'Đã hủy' : item.isFull ? 'Đã đầy' : started ? 'Đã bắt đầu' : `Còn ${item.availableSlots} chỗ`}
         </span>
       </div>
       <h2 className="mt-4 text-xl font-extrabold text-slate-950">{item.title}</h2>

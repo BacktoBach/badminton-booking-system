@@ -254,7 +254,7 @@ describe("admin classes API", () => {
     expect(JSON.stringify(response.body)).not.toMatch(/password|tokenVersion|role/);
   });
 
-  it("deletes a class with its enrollments and returns stable missing-class errors", async () => {
+  it("cancels a class while retaining enrollments and rejects repeated cancellation", async () => {
     const classId = await insertClass(pool, adminId, { title: "Delete Class" });
     const studentId = await insertUser(pool, {
       name: "Delete Student",
@@ -271,13 +271,33 @@ describe("admin classes API", () => {
       .set("Cookie", adminCookie);
     expect(removed.status).toBe(204);
     expect((await pool.query("SELECT 1 FROM enrollments WHERE class_id = $1", [classId])).rowCount)
-      .toBe(0);
+      .toBe(1);
+    expect((await pool.query("SELECT cancelled_at FROM classes WHERE id = $1 AND cancelled_at IS NOT NULL", [classId])).rowCount).toBe(1);
 
     const missing = await request(app)
       .delete(`/api/classes/${classId}`)
       .set("Cookie", adminCookie);
-    expect(missing.status).toBe(404);
-    expect(missing.body.error.code).toBe("CLASS_NOT_FOUND");
+    expect(missing.status).toBe(409);
+    expect(missing.body.error.code).toBe("CLASS_ALREADY_CANCELLED");
+  });
+
+  it("keeps paid history and records a manual refund exactly once", async () => {
+    const classId = await insertClass(pool, adminId, { title: "Refund Class" });
+    const studentId = await insertUser(pool, { name: "Refund Student", email: "refund@example.com", role: "user" });
+    await pool.query(
+      "INSERT INTO enrollments (class_id, user_id, amount_vnd, payment_code) VALUES ($1, $2, 5000, 'BC1234567890ABCDEF')",
+      [classId, studentId],
+    );
+    expect((await request(app).delete(`/api/classes/${classId}`).set("Cookie", adminCookie)).status).toBe(204);
+    const pending = await pool.query("SELECT refund_status FROM enrollments WHERE class_id = $1", [classId]);
+    expect(pending.rows[0]?.refund_status).toBe("pending");
+    const notification = await pool.query<{ body_text: string }>("SELECT body_text FROM email_outbox WHERE recipient_email = 'refund@example.com'");
+    expect(notification.rows[0]?.body_text).toContain("hoàn 100%");
+    const route = `/api/admin/classes/${classId}/refunds/${studentId}`;
+    expect((await request(app).post(route).set("Cookie", adminCookie).send({ reference: "BANK-REFUND-1" })).status).toBe(200);
+    expect((await request(app).post(route).set("Cookie", adminCookie).send({ reference: "BANK-REFUND-2" })).status).toBe(409);
+    const stored = await pool.query("SELECT refund_status, refund_reference FROM enrollments WHERE class_id = $1", [classId]);
+    expect(stored.rows[0]).toMatchObject({ refund_status: "refunded", refund_reference: "BANK-REFUND-1" });
   });
 
   it("validates create and patch payloads before reaching PostgreSQL", async () => {

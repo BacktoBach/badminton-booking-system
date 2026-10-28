@@ -8,7 +8,7 @@ import { useClassDetail } from '../../hooks/classes/useClasses'
 import { useCancelEnrollment, useEnroll } from '../../hooks/enrollments/useEnrollments'
 import { levelLabels } from '../../types/class.types'
 import { getErrorMessage } from '../../utils/api-error'
-import { formatDateTime, hasStarted } from '../../utils/date'
+import { canCancelEnrollment, formatDateTime, hasStarted } from '../../utils/date'
 
 export function ClassDetailPage() {
   const { classId = '' } = useParams()
@@ -99,7 +99,7 @@ export function ClassDetailPage() {
       <aside>
         <div className="sticky top-24 rounded-3xl border bg-white p-7 shadow-sm">
           <p className="font-bold text-emerald-700">
-            {started ? 'Lớp đã bắt đầu' : item.isFull ? 'Lớp đã đủ chỗ' : 'Đang mở đăng ký'}
+            {item.cancelledAt ? 'Lớp đã hủy' : started ? 'Lớp đã bắt đầu' : item.isFull ? 'Lớp đã đủ chỗ' : 'Đang mở đăng ký'}
           </p>
           <h2 className="mt-2 text-2xl font-black">Giữ chỗ của bạn</h2>
           <div className="mt-5 rounded-xl bg-sky-50 p-5">
@@ -117,7 +117,9 @@ export function ClassDetailPage() {
             </div>
             <p className="mt-3 text-sm text-slate-600">Còn {item.availableSlots} chỗ</p>
           </div>
-          {auth.data?.user.role === 'admin' ? (
+          {item.cancelledAt ? (
+            <p className="mt-5 text-sm text-rose-700">Lớp đã hủy. Học phí đã thanh toán sẽ được hoàn sau khi quản trị viên đối soát.</p>
+          ) : auth.data?.user.role === 'admin' ? (
             <Link className="mt-5 block text-center font-bold text-emerald-700" to="/admin/classes">
               Quản lý lớp
             </Link>
@@ -137,10 +139,10 @@ export function ClassDetailPage() {
             <Button
               className="mt-5 w-full"
               variant="danger"
-              disabled={started || cancel.isPending}
+              disabled={!canCancelEnrollment(item.startDate) || cancel.isPending}
               onClick={handleCancel}
             >
-              {cancel.isPending ? 'Đang hủy…' : started ? 'Lớp đã bắt đầu' : 'Hủy đăng ký'}
+              {cancel.isPending ? 'Đang hủy…' : !canCancelEnrollment(item.startDate) ? 'Đã hết hạn hủy (24 giờ)' : 'Hủy đăng ký'}
             </Button>
           ) : (
             <Button

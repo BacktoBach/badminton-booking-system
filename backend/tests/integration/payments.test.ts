@@ -239,6 +239,22 @@ describe("paid enrollment", () => {
     expect(emails.rows.map((row) => row.event_key)).toEqual([`payment:needs_review:${code}`]);
   });
 
+  it("keeps a transfer after class cancellation for manual review", async () => {
+    await request(app).post(`/api/classes/${classId}/enrollments`).set("Cookie", cookie);
+    const code = (await request(app).get(`/api/payments/${classId}`).set("Cookie", cookie)).body.data.paymentCode as string;
+    await pool.query("UPDATE classes SET cancelled_at = NOW() WHERE id = $1", [classId]);
+    await pool.query("UPDATE enrollments SET payment_status = 'cancelled' WHERE class_id = $1", [classId]);
+    const response = await sendWebhook({
+      id: 1005, accountNumber: "1234567890", transferType: "in", transferAmount: 10000,
+      code, content: code, referenceCode: "BANK-1005",
+    });
+    expect(response.status).toBe(200);
+    const payment = await pool.query("SELECT payment_status FROM enrollments WHERE class_id = $1", [classId]);
+    expect(payment.rows[0]?.payment_status).toBe("needs_review");
+    const event = await pool.query("SELECT outcome FROM sepay_events WHERE provider_event_id = 1005");
+    expect(event.rows[0]?.outcome).toBe("late_payment");
+  });
+
   it("rejects an unsigned webhook without storing or applying it", async () => {
     const response = await request(app)
       .post("/api/payments/webhooks/sepay")

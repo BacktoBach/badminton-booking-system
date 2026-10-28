@@ -16,6 +16,7 @@ export const toPublicClass = (record: ClassWithCountRow, isEnrolled?: boolean): 
     tuitionVnd: record.tuition_vnd,
     availableSlots,
     isFull: availableSlots === 0,
+    ...(record.cancelled_at === undefined ? {} : { cancelledAt: record.cancelled_at?.toISOString() ?? null }),
     ...(isEnrolled === undefined ? {} : { isEnrolled }),
     ...(record.has_pending_payment === undefined ? {} : { hasPendingPayment: record.has_pending_payment }),
     ...(record.has_paid_tuition === undefined ? {} : { hasPaidTuition: record.has_paid_tuition }),

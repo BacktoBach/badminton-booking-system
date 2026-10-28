@@ -68,6 +68,9 @@ const ForbiddenPage = lazy(() =>
 const NotFoundPage = lazy(() =>
   import('../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })),
 )
+const TermsPage = lazy(() =>
+  import('../pages/TermsPage').then((module) => ({ default: module.TermsPage })),
+)
 
 export const AppRoutes = () => (
   <Suspense
@@ -92,6 +95,7 @@ export const AppRoutes = () => (
         <Route index element={<Navigate to="/classes" replace />} />
         <Route path="classes" element={<ClassListPage />} />
         <Route path="classes/:classId" element={<ClassDetailPage />} />
+        <Route path="terms" element={<TermsPage />} />
         <Route path="forbidden" element={<ForbiddenPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="change-password" element={<ChangePasswordPage />} />
