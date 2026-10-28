@@ -214,8 +214,8 @@ test.describe("Class discovery and booking", () => {
         rejectedPage.getByRole("alert").filter({ hasText: "đủ chỗ" }),
       ).toBeVisible();
       await expect(
-        rejectedPage.getByRole("button", { name: "Đăng ký lớp học" }),
-      ).toBeDisabled();
+        rejectedPage.getByRole("button", { name: "Tham gia danh sách chờ" }),
+      ).toBeEnabled();
     } finally {
       await Promise.all(contexts.map((context) => context.close()));
     }
