@@ -93,9 +93,8 @@ describe("database baseline", () => {
       SELECT table_name
       FROM information_schema.tables
       WHERE table_schema = 'public'
-      ORDER BY table_name
     `);
-    expect(tableResult.rows.map((row) => row.table_name)).toEqual([
+    expect(tableResult.rows.map((row) => row.table_name).sort()).toEqual([
       "classes",
       "class_waitlist",
       "email_outbox",
