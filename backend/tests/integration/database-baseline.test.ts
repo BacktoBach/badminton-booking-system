@@ -103,7 +103,7 @@ describe("database baseline", () => {
       "schema_migrations",
       "sepay_events",
       "users",
-    ]);
+    ].sort());
   });
 
   it("accepts the same applied migrations with different line endings", async () => {
