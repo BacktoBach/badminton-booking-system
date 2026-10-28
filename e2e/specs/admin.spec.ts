@@ -66,21 +66,13 @@ test("admin searches and inspects the enrolled student list", async ({
   await expect(page.getByRole("row")).toHaveCount(2);
 });
 
-test("admin deletes a class with enrolled students", async ({
-  page,
-  request,
-}) => {
+test("admin cancels a class with enrolled students and retains its history", async ({ page }) => {
   const admin = new AdminClassesPage(page);
   const title = seededClasses.deletable.title;
-
-  try {
-    await admin.open();
-    await admin.search(title);
-    await expect(admin.row(title)).toContainText("1/4");
-    await admin.deleteClass(title);
-  } finally {
-    await deleteAdminClassByTitle(request, title);
-  }
+  await admin.open();
+  await admin.search(title);
+  await expect(admin.row(title)).toContainText("1/4");
+  await admin.cancelClass(title);
 });
 
 test("admin searches and paginates students", async ({ page }) => {
