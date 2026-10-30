@@ -16,7 +16,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:reset:e2e": "tsx scripts/reset-e2e-database.ts",
     "start:e2e": "tsx src/server.ts",
-    "load:enrollment": "tsx scripts/load-enrollment.ts"
+    "load:enrollment": "tsx scripts/load-enrollment.ts",
+    "smoke:sentry": "tsx scripts/smoke-sentry.ts"
   },
   "engines": {
     "node": ">=22.12.0"
