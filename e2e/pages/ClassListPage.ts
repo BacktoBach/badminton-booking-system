@@ -41,8 +41,11 @@ export class ClassListPage {
 
   async cancelEnrollment(title: string): Promise<void> {
     const enrollment = this.card(title).locator("..");
-    this.page.once("dialog", (dialog) => dialog.accept());
     await enrollment.getByRole("button", { name: "Hủy đăng ký" }).click();
+    await this.page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Xác nhận" })
+      .click();
     await expect(
       this.page.getByRole("status").filter({ hasText: "Đã hủy đăng ký lớp" }),
     ).toBeVisible();

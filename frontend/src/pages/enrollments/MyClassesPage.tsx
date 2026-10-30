@@ -1,4 +1,5 @@
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useState } from 'react'
 import { ClassCard } from '../../components/classes/ClassCard'
 import {
   EmptyState,
@@ -7,6 +8,7 @@ import {
   UpdatingContent,
 } from '../../components/feedback/States'
 import { Button } from '../../components/ui/Button'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { Pagination } from '../../components/ui/Pagination'
 import { useToast } from '../../contexts/ToastContext'
 import { useCancelEnrollment, useMyEnrollments } from '../../hooks/enrollments/useEnrollments'
@@ -22,13 +24,16 @@ import { readEnrollmentStatus, readPositivePage } from '../../utils/search-param
 import type { WaitlistEntry } from '../../services/waitlist.service'
 
 function EnrollmentItem({ item }: { item: Parameters<typeof ClassCard>[0]['item'] }) {
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const cancel = useCancelEnrollment(item.id)
   const { showToast } = useToast()
   const canCancel = canCancelEnrollment(item.startDate)
   const handleCancel = () => {
-    if (!window.confirm(`Hủy đăng ký lớp “${item.title}”?`)) return
     cancel.mutate(undefined, {
-      onSuccess: () => showToast('Đã hủy đăng ký lớp.'),
+      onSuccess: () => {
+        setConfirmOpen(false)
+        showToast('Đã hủy đăng ký lớp.')
+      },
       onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }),
     })
   }
@@ -45,10 +50,18 @@ function EnrollmentItem({ item }: { item: Parameters<typeof ClassCard>[0]['item'
           variant="danger"
           className="mt-2 w-full"
           disabled={cancel.isPending}
-          onClick={handleCancel}
+          onClick={() => setConfirmOpen(true)}
         >
           Hủy đăng ký
         </Button>
+      )}
+      {confirmOpen && (
+        <ConfirmDialog
+          message={`Hủy đăng ký lớp “${item.title}”?`}
+          pending={cancel.isPending}
+          onClose={() => setConfirmOpen(false)}
+          onConfirm={handleCancel}
+        />
       )}
     </div>
   )

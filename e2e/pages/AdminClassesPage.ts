@@ -99,9 +99,12 @@ export class AdminClassesPage {
   }
 
   async cancelClass(title: string): Promise<void> {
-    this.page.once("dialog", (dialog) => dialog.accept());
     await this.row(title)
       .getByRole("button", { name: `Hủy lớp ${title}` })
+      .click();
+    await this.page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Xác nhận" })
       .click();
     await expect(
       this.page.getByRole("status").filter({ hasText: "Đã hủy lớp học" }),
@@ -109,7 +112,9 @@ export class AdminClassesPage {
     await expect(this.row(title)).toHaveCount(0);
     await this.page.getByRole("button", { name: "Lớp đã hủy" }).click();
     await expect(this.row(title)).toBeVisible();
-    await expect(this.row(title).getByRole("link", { name: `Xem học viên lớp ${title}` })).toBeVisible();
+    await expect(
+      this.row(title).getByRole("link", { name: `Xem học viên lớp ${title}` }),
+    ).toBeVisible();
   }
 
   private async fillForm(data: ClassFormData): Promise<void> {

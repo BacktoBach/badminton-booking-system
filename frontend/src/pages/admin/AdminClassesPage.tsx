@@ -1,4 +1,5 @@
 import { Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { classService } from '../../services/class.service'
@@ -9,6 +10,7 @@ import {
   UpdatingContent,
 } from '../../components/feedback/States'
 import { Pagination } from '../../components/ui/Pagination'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { useToast } from '../../contexts/ToastContext'
 import { useAdminClasses, useDeleteClass } from '../../hooks/classes/useClasses'
 import { useDebouncedSearchParam } from '../../hooks/useDebouncedSearchParam'
@@ -19,6 +21,11 @@ import { formatDateTime } from '../../utils/date'
 import { readClassLevel, readPositivePage, SEARCH_MAX_LENGTH } from '../../utils/search-params'
 
 export function AdminClassesPage() {
+  const [confirmation, setConfirmation] = useState<{
+    kind: 'class' | 'series'
+    id: string
+    title: string
+  } | null>(null)
   const queryClient = useQueryClient()
   const cancelSeries = useMutation({
     mutationFn: classService.cancelSeries,
@@ -46,30 +53,26 @@ export function AdminClassesPage() {
     updateParams({ page: String(lastPage) }, false),
   )
 
-  const deleteClass = (id: string, title: string) => {
-    if (
-      !window.confirm(
-        `Hủy lớp “${title}”? Học viên sẽ được thông báo và các khoản đã thanh toán sẽ chờ đối soát hoàn tiền.`,
-      )
-    )
-      return
-    remove.mutate(id, {
-      onSuccess: () => showToast('Đã hủy lớp học.'),
-      onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }),
-    })
-  }
-
-  const deleteSeries = (id: string, title: string) => {
-    if (
-      !window.confirm(
-        `Hủy tất cả buổi chưa bắt đầu trong chuỗi “${title}”? Học viên sẽ được thông báo và các khoản đã thanh toán sẽ chờ đối soát hoàn tiền.`,
-      )
-    )
-      return
-    cancelSeries.mutate(id, {
-      onSuccess: () => showToast('Đã hủy các buổi chưa bắt đầu.'),
-      onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }),
-    })
+  const confirmCancellation = () => {
+    if (!confirmation) return
+    const onError = (error: Error) => showToast({ type: 'error', message: getErrorMessage(error) })
+    if (confirmation.kind === 'class') {
+      remove.mutate(confirmation.id, {
+        onSuccess: () => {
+          setConfirmation(null)
+          showToast('Đã hủy lớp học.')
+        },
+        onError,
+      })
+    } else {
+      cancelSeries.mutate(confirmation.id, {
+        onSuccess: () => {
+          setConfirmation(null)
+          showToast('Đã hủy các buổi chưa bắt đầu.')
+        },
+        onError,
+      })
+    }
   }
 
   return (
@@ -197,7 +200,9 @@ export function AdminClassesPage() {
                               aria-label={`Hủy lớp ${item.title}`}
                               className="rounded-lg border p-2 text-rose-600"
                               disabled={remove.isPending}
-                              onClick={() => deleteClass(item.id, item.title)}
+                              onClick={() =>
+                                setConfirmation({ kind: 'class', id: item.id, title: item.title })
+                              }
                             >
                               <Trash2 size={18} />
                             </button>
@@ -207,7 +212,9 @@ export function AdminClassesPage() {
                               aria-label={`Hủy chuỗi lớp ${item.title}`}
                               className="rounded-lg border p-2 text-rose-600"
                               disabled={cancelSeries.isPending}
-                              onClick={() => deleteSeries(item.id, item.title)}
+                              onClick={() =>
+                                setConfirmation({ kind: 'series', id: item.id, title: item.title })
+                              }
                             >
                               Hủy chuỗi
                             </button>
@@ -229,6 +236,18 @@ export function AdminClassesPage() {
           )}
         </UpdatingContent>
       </div>
+      {confirmation && (
+        <ConfirmDialog
+          message={
+            confirmation.kind === 'class'
+              ? `Hủy lớp “${confirmation.title}”? Học viên sẽ được thông báo và các khoản đã thanh toán sẽ chờ đối soát hoàn tiền.`
+              : `Hủy tất cả buổi chưa bắt đầu trong chuỗi “${confirmation.title}”? Học viên sẽ được thông báo và các khoản đã thanh toán sẽ chờ đối soát hoàn tiền.`
+          }
+          pending={remove.isPending || cancelSeries.isPending}
+          onClose={() => setConfirmation(null)}
+          onConfirm={confirmCancellation}
+        />
+      )}
     </>
   )
 }

@@ -1,7 +1,9 @@
 import { CalendarDays, MapPin, UserRound } from 'lucide-react'
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/feedback/States'
 import { Button } from '../../components/ui/Button'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { useToast } from '../../contexts/ToastContext'
 import { useCurrentUser } from '../../hooks/auth/useAuth'
 import { useClassDetail } from '../../hooks/classes/useClasses'
@@ -17,6 +19,7 @@ import { getErrorMessage } from '../../utils/api-error'
 import { canCancelEnrollment, formatDateTime, hasStarted } from '../../utils/date'
 
 export function ClassDetailPage() {
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const { classId = '' } = useParams()
   const query = useClassDetail(classId)
   const auth = useCurrentUser()
@@ -59,9 +62,11 @@ export function ClassDetailPage() {
     })
   }
   const handleCancel = () => {
-    if (!window.confirm(`Hủy đăng ký lớp “${item.title}”?`)) return
     cancel.mutate(undefined, {
-      onSuccess: () => showToast('Đã hủy đăng ký lớp.'),
+      onSuccess: () => {
+        setConfirmOpen(false)
+        showToast('Đã hủy đăng ký lớp.')
+      },
       onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }),
     })
   }
@@ -183,7 +188,7 @@ export function ClassDetailPage() {
               className="mt-5 w-full"
               variant="danger"
               disabled={!canCancelEnrollment(item.startDate) || cancel.isPending}
-              onClick={handleCancel}
+              onClick={() => setConfirmOpen(true)}
             >
               {cancel.isPending
                 ? 'Đang hủy…'
@@ -246,6 +251,14 @@ export function ClassDetailPage() {
           )}
         </div>
       </aside>
+      {confirmOpen && (
+        <ConfirmDialog
+          message={`Hủy đăng ký lớp “${item.title}”?`}
+          pending={cancel.isPending}
+          onClose={() => setConfirmOpen(false)}
+          onConfirm={handleCancel}
+        />
+      )}
     </section>
   )
 }
