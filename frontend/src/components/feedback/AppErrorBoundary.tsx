@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { captureFrontendError } from '../../config/sentry'
 import { Button } from '../ui/Button'
 
 type State = { failed: boolean }
@@ -9,6 +10,7 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, State> 
     return { failed: true }
   }
   componentDidCatch(error: Error, info: ErrorInfo) {
+    captureFrontendError(error)
     if (import.meta.env.DEV) console.error('Uncaught React error', error, info)
   }
 

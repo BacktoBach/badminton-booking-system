@@ -20,20 +20,30 @@ describe("application foundation", () => {
     const response = await request(app).get("/api/health");
 
     expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({ status: "ok", database: "connected" });
+    expect(response.body).toMatchObject({
+      status: "ok",
+      database: "connected",
+    });
     expect(response.body.uptime).toEqual(expect.any(Number));
   });
 
   it("reports database unavailability without leaking the underlying error", async () => {
-    vi.mocked(checkDatabaseConnection).mockRejectedValueOnce(new Error("private database detail"));
+    vi.mocked(checkDatabaseConnection).mockRejectedValueOnce(
+      new Error("private database detail"),
+    );
 
     const response = await request(app).get("/api/health");
 
     expect(response.status).toBe(503);
     expect(response.body).toEqual({
-      error: { code: "DATABASE_UNAVAILABLE", message: "Database is unavailable" },
+      error: {
+        code: "DATABASE_UNAVAILABLE",
+        message: "Database is unavailable",
+      },
     });
-    expect(JSON.stringify(response.body)).not.toContain("private database detail");
+    expect(JSON.stringify(response.body)).not.toContain(
+      "private database detail",
+    );
   });
 
   it("uses the standard not-found response", async () => {
@@ -43,6 +53,26 @@ describe("application foundation", () => {
     expect(response.body).toEqual({
       error: { code: "ROUTE_NOT_FOUND", message: "Cannot GET /api/missing" },
     });
+  });
+
+  it("adds a request ID and omits query values from access logs", async () => {
+    const log = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    try {
+      const response = await request(app).get(
+        "/api/health?token=private-value",
+      );
+      const requestId = response.headers["x-request-id"];
+
+      expect(requestId).toMatch(/^[0-9a-f-]{36}$/);
+      expect(JSON.stringify(log.mock.calls)).toContain(requestId);
+      expect(JSON.parse(log.mock.calls[0]?.[0] as string)).toMatchObject({
+        requestId,
+        path: "/api/health",
+      });
+      expect(JSON.stringify(log.mock.calls)).not.toContain("private-value");
+    } finally {
+      log.mockRestore();
+    }
   });
 
   it("normalizes malformed JSON errors", async () => {
@@ -71,7 +101,9 @@ describe("application foundation", () => {
       .set("Origin", configuredOrigin);
 
     expect(response.status).toBe(200);
-    expect(response.headers["access-control-allow-origin"]).toBe(configuredOrigin);
+    expect(response.headers["access-control-allow-origin"]).toBe(
+      configuredOrigin,
+    );
     expect(response.headers["access-control-allow-credentials"]).toBe("true");
   });
 
@@ -92,7 +124,9 @@ describe("application foundation", () => {
 
     expect(response.status).toBe(404);
     expect(response.body.error.code).toBe("ROUTE_NOT_FOUND");
-    expect(response.headers["access-control-allow-origin"]).toBe("http://api.example.com");
+    expect(response.headers["access-control-allow-origin"]).toBe(
+      "http://api.example.com",
+    );
   });
 
   it("serves the OpenAPI document", async () => {
@@ -102,7 +136,9 @@ describe("application foundation", () => {
     expect(response.body.openapi).toBe("3.0.3");
     expect(response.body.info.title).toBe("Badminton Class Booking API");
     expect(response.body.paths).toHaveProperty("/api/auth/login");
-    expect(response.body.paths).toHaveProperty("/api/classes/{classId}/enrollments");
+    expect(response.body.paths).toHaveProperty(
+      "/api/classes/{classId}/enrollments",
+    );
     expect(response.body.components.securitySchemes.cookieAuth).toMatchObject({
       type: "apiKey",
       in: "cookie",
@@ -123,9 +159,13 @@ describe("application foundation", () => {
   });
 
   it("does not leak implementation details for unexpected errors", async () => {
-    vi.mocked(checkDatabaseConnection).mockRejectedValueOnce("non-error database rejection");
+    vi.mocked(checkDatabaseConnection).mockRejectedValueOnce(
+      "non-error database rejection",
+    );
     const response = await request(app).get("/api/health");
     expect(response.status).toBe(503);
-    expect(JSON.stringify(response.body)).not.toContain("non-error database rejection");
+    expect(JSON.stringify(response.body)).not.toContain(
+      "non-error database rejection",
+    );
   });
 });

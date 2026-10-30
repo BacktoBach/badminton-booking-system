@@ -8,6 +8,7 @@ import {
   processEmailOutbox,
 } from "./services/email-outbox.service.js";
 import { promoteAvailableWaitlists } from "./services/waitlist.service.js";
+import { flushSentry, reportBackgroundError } from "./observability/sentry.js";
 
 const listen = (): Promise<Server> =>
   new Promise((resolve, reject) => {
@@ -30,30 +31,32 @@ const startServer = async (): Promise<void> => {
   const server = await listen();
   const expiryTimer = setInterval(() => {
     void expirePendingPayments().catch((error: unknown) => {
-      console.error("Failed to expire pending payments", error);
+      reportBackgroundError("expire_pending_payments", error);
     });
   }, 30_000);
   let waitlistWorkerRunning = false;
   const runWaitlistWorker = (): void => {
     if (waitlistWorkerRunning) return;
     waitlistWorkerRunning = true;
-    void promoteAvailableWaitlists().catch((error: unknown) => {
-      console.error("Failed to promote waitlist entries", error);
-    }).finally(() => {
-      waitlistWorkerRunning = false;
-    });
+    void promoteAvailableWaitlists()
+      .catch((error: unknown) => {
+        reportBackgroundError("promote_waitlist", error);
+      })
+      .finally(() => {
+        waitlistWorkerRunning = false;
+      });
   };
   const waitlistTimer = setInterval(runWaitlistWorker, 30_000);
   expiryTimer.unref();
   waitlistTimer.unref();
   void expirePendingPayments().catch((error: unknown) => {
-    console.error("Failed to expire pending payments on startup", error);
+    reportBackgroundError("expire_pending_payments_startup", error);
   });
   runWaitlistWorker();
 
   const runReminders = (): void => {
     void enqueueDueClassReminders().catch((error: unknown) => {
-      console.error("Failed to queue class reminders", error);
+      reportBackgroundError("queue_class_reminders", error);
     });
   };
   let emailWorkerRunning = false;
@@ -62,7 +65,7 @@ const startServer = async (): Promise<void> => {
     emailWorkerRunning = true;
     void processEmailOutbox()
       .catch((error: unknown) => {
-        console.error("Failed to process email outbox", error);
+        reportBackgroundError("process_email_outbox", error);
       })
       .finally(() => {
         emailWorkerRunning = false;
@@ -94,11 +97,13 @@ const startServer = async (): Promise<void> => {
     server.close(async (serverError) => {
       try {
         await closeDatabase();
+        await flushSentry();
         if (serverError) throw serverError;
         clearTimeout(forceExitTimer);
         process.exit(0);
       } catch (error) {
-        console.error("Failed to shut down cleanly", error);
+        reportBackgroundError("shutdown", error);
+        await flushSentry();
         process.exit(1);
       }
     });
@@ -113,15 +118,16 @@ startServer().catch(async (error: unknown) => {
     error instanceof Error && "code" in error
       ? (error as Error & { code?: string }).code
       : undefined;
-  console.error(
-    code === "EADDRINUSE"
-      ? `Port ${env.PORT} is already in use`
-      : "Failed to start API",
+  reportBackgroundError(
+    code === "EADDRINUSE" ? "port_in_use" : "startup",
     error,
   );
   try {
     await closeDatabase();
+  } catch (closeError) {
+    reportBackgroundError("startup_cleanup", closeError);
   } finally {
+    await flushSentry();
     process.exitCode = 1;
   }
 });

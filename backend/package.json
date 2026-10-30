@@ -15,12 +15,14 @@
     "db:migrate:test": "tsx scripts/migrate.ts --test",
     "db:seed": "tsx scripts/seed.ts",
     "db:reset:e2e": "tsx scripts/reset-e2e-database.ts",
-    "start:e2e": "tsx src/server.ts"
+    "start:e2e": "tsx src/server.ts",
+    "load:enrollment": "tsx scripts/load-enrollment.ts"
   },
   "engines": {
     "node": ">=22.12.0"
   },
   "dependencies": {
+    "@sentry/node": "^11.10.0",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
