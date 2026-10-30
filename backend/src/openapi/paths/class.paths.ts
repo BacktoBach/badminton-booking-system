@@ -8,6 +8,29 @@ const protectedErrors = {
 };
 
 export const classPaths = {
+  "/api/classes/{classId}/check-in": {
+    post: {
+      tags: ["Classes"],
+      summary: "Check in to a class session",
+      operationId: "checkInToClass",
+      security: [{ cookieAuth: [] }],
+      parameters: [{ $ref: "#/components/parameters/ClassId" }],
+      requestBody: jsonBody({
+        type: "object",
+        required: ["token"],
+        properties: { token: { type: "string" } },
+      }),
+      responses: {
+        "200": dataResponse("Check-in time", {
+          type: "object",
+          properties: { checkedInAt: { type: "string", format: "date-time" } },
+        }),
+        ...protectedErrors,
+        "404": { $ref: "#/components/responses/ClassNotFound" },
+        "409": { description: "Check-in window closed or already checked in" },
+      },
+    },
+  },
   "/api/classes/series": {
     post: {
       tags: ["Classes"],

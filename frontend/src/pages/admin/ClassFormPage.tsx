@@ -9,7 +9,12 @@ import {
 } from '../../components/classes/ClassForm'
 import { ErrorState, LoadingState } from '../../components/feedback/States'
 import { useToast } from '../../contexts/ToastContext'
-import { useClassDetail, useCreateClass, useUpdateClass } from '../../hooks/classes/useClasses'
+import {
+  classKeys,
+  useClassDetail,
+  useCreateClass,
+  useUpdateClass,
+} from '../../hooks/classes/useClasses'
 import type { ClassWriteInput } from '../../types/class.types'
 import { getErrorMessage } from '../../utils/api-error'
 import { toBusinessDateTimeInput } from '../../utils/date'
@@ -21,6 +26,18 @@ export function ClassFormPage() {
   const [days, setDays] = useState<number[]>([])
   const [scope, setScope] = useState<'one' | 'series'>('one')
   const queryClient = useQueryClient()
+  const imageUpload = useMutation({
+    mutationFn: (file: File) => classService.uploadImage(classId!, file),
+    onSuccess: () => {
+      showToast('Đã cập nhật ảnh lớp.')
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: classKeys.detail(classId!) }),
+        queryClient.invalidateQueries({ queryKey: classKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: classKeys.adminLists() }),
+      ])
+    },
+    onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }),
+  })
   const seriesCreate = useMutation({
     mutationFn: ({
       input,
@@ -184,6 +201,45 @@ export function ClassFormPage() {
         Điền đầy đủ thông tin mà học viên cần để quyết định đăng ký.
       </p>
       {form}
+      {editing && (
+        <section className="mt-6 rounded-xl border bg-white p-5">
+          <h2 className="text-xl font-bold">Ảnh lớp học</h2>
+          {detail.data?.imageUrl && (
+            <img
+              src={detail.data.imageUrl}
+              alt={`Ảnh lớp ${detail.data.title}`}
+              className="mt-4 aspect-video w-full max-w-md rounded-xl object-cover"
+            />
+          )}
+          <label className="mt-4 block">
+            <span className="block font-semibold">Chọn ảnh JPEG, PNG hoặc WebP, tối đa 5 MB</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={imageUpload.isPending}
+              className="mt-2 block"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (!file) return
+                if (
+                  file.size > 5 * 1024 * 1024 ||
+                  !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)
+                ) {
+                  showToast({
+                    type: 'error',
+                    message: 'Chỉ nhận ảnh JPEG, PNG hoặc WebP tối đa 5 MB.',
+                  })
+                  event.target.value = ''
+                  return
+                }
+                imageUpload.mutate(file)
+                event.target.value = ''
+              }}
+            />
+          </label>
+          {imageUpload.isPending && <p role="status">Đang tải ảnh lên…</p>}
+        </section>
+      )}
     </>
   )
 }

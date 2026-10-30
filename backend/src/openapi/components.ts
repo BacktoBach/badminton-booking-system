@@ -169,6 +169,7 @@ export const components = {
       properties: {
         id: { type: "string", format: "uuid" },
         seriesId: { type: "string", format: "uuid", nullable: true },
+        imageUrl: { type: "string", format: "uri", nullable: true },
         title: { type: "string", example: "Badminton Foundation" },
         description: {
           type: "string",

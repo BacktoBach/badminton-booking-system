@@ -10,6 +10,7 @@ export const toPublicClass = (
   );
   return {
     ...(record.series_id === undefined ? {} : { seriesId: record.series_id }),
+    ...(record.image_url === undefined ? {} : { imageUrl: record.image_url }),
     id: record.id,
     title: record.title,
     description: record.description,

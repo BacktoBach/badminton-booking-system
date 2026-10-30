@@ -28,6 +28,7 @@ import {
 } from "../middlewares/rate-limit.js";
 import { validateParams, validateQuery } from "../middlewares/validate.js";
 import { validateBody } from "../middlewares/validate.js";
+import { checkIn } from "../services/attendance.service.js";
 import {
   classListQuerySchema,
   classParamsSchema,
@@ -37,6 +38,25 @@ import {
 } from "../schemas/class.schema.js";
 
 export const classRouter = Router();
+
+classRouter.post(
+  "/:classId/check-in",
+  authenticate,
+  authorize("user"),
+  ...enrollmentLimiters,
+  validateParams(classParamsSchema),
+  validateBody(z.object({ token: z.string().min(1).max(1024) }).strict()),
+  async (request, response) => {
+    const { classId } = request.validated!.params as { classId: string };
+    response.json({
+      data: await checkIn(
+        classId,
+        request.user!.id,
+        request.body.token as string,
+      ),
+    });
+  },
+);
 
 classRouter.get(
   "/",

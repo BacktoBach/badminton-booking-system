@@ -78,7 +78,7 @@ export const findClassWithCount = async (
   const result = await database.query<ClassWithCountRow>(
     `SELECT c.id, c.title, c.description, c.coach_name, c.level, c.start_date,
             c.schedule, c.location, c.max_students, c.tuition_vnd, c.created_by_id,
-            c.created_at, c.updated_at,
+            c.created_at, c.updated_at, c.image_url,
             (COUNT(e.user_id) + (SELECT COUNT(*) FROM class_waitlist w WHERE w.class_id = c.id
               AND w.status = 'offered' AND w.offer_expires_at > NOW()))::INTEGER AS current_students
      FROM classes c
@@ -108,7 +108,7 @@ export const listUserEnrollments = async (
     database.query<EnrollmentClassRow>(
       `SELECT c.id, c.title, c.description, c.coach_name, c.level, c.start_date,
               c.schedule, c.location, c.max_students, c.tuition_vnd, c.created_by_id,
-              c.created_at, c.updated_at, own.enrolled_at,
+              c.created_at, c.updated_at, c.image_url, own.enrolled_at,
               (COUNT(all_enrollments.user_id) + (SELECT COUNT(*) FROM class_waitlist w WHERE w.class_id = c.id
                 AND w.status = 'offered' AND w.offer_expires_at > NOW()))::INTEGER AS current_students
        FROM enrollments own

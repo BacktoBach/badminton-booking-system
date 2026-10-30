@@ -13,6 +13,9 @@ process.env.NODE_ENV = "test";
 process.env.RESEND_API_KEY = "test-resend-key";
 process.env.MAIL_FROM = "ShuttleUp <no-reply@example.com>";
 process.env.PASSWORD_RESET_URL = "http://localhost:5173/reset-password";
+process.env.CLOUDINARY_CLOUD_NAME = "test-cloud";
+process.env.CLOUDINARY_API_KEY = "test-key";
+process.env.CLOUDINARY_API_SECRET = "test-secret";
 
 export default defineConfig({
   test: {

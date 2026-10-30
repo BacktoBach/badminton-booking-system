@@ -67,7 +67,10 @@ describe("database baseline", () => {
   beforeAll(async () => {
     databasePool = createTestDatabasePool();
     await resetTestDatabase(databasePool);
-    await runMigrations({ connectionString: getTestDatabaseUrl(), log: () => undefined });
+    await runMigrations({
+      connectionString: getTestDatabaseUrl(),
+      log: () => undefined,
+    });
   });
 
   beforeEach(async () => {
@@ -79,14 +82,17 @@ describe("database baseline", () => {
   });
 
   it("applies the baseline once and remains idempotent", async () => {
-    await runMigrations({ connectionString: getTestDatabaseUrl(), log: () => undefined });
+    await runMigrations({
+      connectionString: getTestDatabaseUrl(),
+      log: () => undefined,
+    });
 
     const migrationResult = await databasePool.query<{ count: number }>(
       "SELECT COUNT(*)::INTEGER AS count FROM schema_migrations",
     );
-    const migrationFiles = (await readdir(resolve("database/migrations"))).filter(
-      (filename) => filename.endsWith(".sql"),
-    );
+    const migrationFiles = (
+      await readdir(resolve("database/migrations"))
+    ).filter((filename) => filename.endsWith(".sql"));
     expect(migrationResult.rows[0]?.count).toBe(migrationFiles.length);
 
     const tableResult = await databasePool.query<{ table_name: string }>(`
@@ -94,28 +100,39 @@ describe("database baseline", () => {
       FROM information_schema.tables
       WHERE table_schema = 'public'
     `);
-    expect(tableResult.rows.map((row) => row.table_name).sort()).toEqual([
-      "classes",
-      "class_waitlist",
-      "data_deletion_requests",
-      "email_outbox",
-      "enrollments",
-      "password_reset_tokens",
-      "schema_migrations",
-      "sepay_events",
-      "users",
-    ].sort());
+    expect(tableResult.rows.map((row) => row.table_name).sort()).toEqual(
+      [
+        "classes",
+        "class_waitlist",
+        "class_attendance",
+        "data_deletion_requests",
+        "email_outbox",
+        "enrollments",
+        "password_reset_tokens",
+        "schema_migrations",
+        "sepay_events",
+        "users",
+      ].sort(),
+    );
   });
 
   it("accepts the same applied migrations with different line endings", async () => {
-    const temporaryDirectory = await mkdtemp(join(tmpdir(), "badminton-migration-eol-"));
+    const temporaryDirectory = await mkdtemp(
+      join(tmpdir(), "badminton-migration-eol-"),
+    );
     try {
       const migrationFiles = (await readdir(resolve("database/migrations")))
         .filter((filename) => filename.endsWith(".sql"))
         .sort();
       for (const filename of migrationFiles) {
-        const source = await readFile(resolve("database/migrations", filename), "utf8");
-        await writeFile(join(temporaryDirectory, filename), source.replace(/\r\n/g, "\n"));
+        const source = await readFile(
+          resolve("database/migrations", filename),
+          "utf8",
+        );
+        await writeFile(
+          join(temporaryDirectory, filename),
+          source.replace(/\r\n/g, "\n"),
+        );
       }
 
       await expect(
@@ -134,7 +151,10 @@ describe("database baseline", () => {
     const extensions = await databasePool.query<{ extname: string }>(
       "SELECT extname FROM pg_extension WHERE extname IN ('pgcrypto', 'pg_trgm') ORDER BY extname",
     );
-    expect(extensions.rows.map((row) => row.extname)).toEqual(["pg_trgm", "pgcrypto"]);
+    expect(extensions.rows.map((row) => row.extname)).toEqual([
+      "pg_trgm",
+      "pgcrypto",
+    ]);
 
     const indexes = await databasePool.query<{ indexname: string }>(
       `SELECT indexname FROM pg_indexes
@@ -153,16 +173,20 @@ describe("database baseline", () => {
        WHERE trigger_schema = 'public'
        ORDER BY trigger_name`,
     );
-    expect(triggers.rows.map((row) => row.trigger_name)).toEqual(expect.arrayContaining([
-      "classes_set_updated_at",
-      "classes_validate_capacity_update",
-      "enrollments_validate_capacity",
-      "users_set_updated_at",
-    ]));
+    expect(triggers.rows.map((row) => row.trigger_name)).toEqual(
+      expect.arrayContaining([
+        "classes_set_updated_at",
+        "classes_validate_capacity_update",
+        "enrollments_validate_capacity",
+        "users_set_updated_at",
+      ]),
+    );
   });
 
   it("rejects checksum drift in an applied migration", async () => {
-    const temporaryDirectory = await mkdtemp(join(tmpdir(), "badminton-migration-drift-"));
+    const temporaryDirectory = await mkdtemp(
+      join(tmpdir(), "badminton-migration-drift-"),
+    );
     try {
       const source = await readFile(
         resolve("database/migrations/001_initial_schema.sql"),
@@ -187,7 +211,9 @@ describe("database baseline", () => {
   });
 
   it("rejects an applied migration missing from source", async () => {
-    const temporaryDirectory = await mkdtemp(join(tmpdir(), "badminton-migration-missing-"));
+    const temporaryDirectory = await mkdtemp(
+      join(tmpdir(), "badminton-migration-missing-"),
+    );
     try {
       await expect(
         runMigrations({
@@ -195,7 +221,9 @@ describe("database baseline", () => {
           migrationsDirectory: temporaryDirectory,
           log: () => undefined,
         }),
-      ).rejects.toThrow("Applied migration is missing from source: 001_initial_schema.sql");
+      ).rejects.toThrow(
+        "Applied migration is missing from source: 001_initial_schema.sql",
+      );
     } finally {
       await rm(temporaryDirectory, { recursive: true, force: true });
     }
@@ -203,7 +231,10 @@ describe("database baseline", () => {
 
   it("refuses destructive test operations on the development database", async () => {
     const developmentUrl = process.env.DEVELOPMENT_DATABASE_URL_FOR_GUARD;
-    if (!developmentUrl) throw new Error("Development database URL was not preserved by test config");
+    if (!developmentUrl)
+      throw new Error(
+        "Development database URL was not preserved by test config",
+      );
     const developmentPool = createDatabasePool(developmentUrl);
     const client = await developmentPool.connect();
     try {
@@ -254,14 +285,20 @@ describe("database baseline", () => {
         "INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3)",
         ["Second User", "student@example.com", "hash"],
       ),
-    ).rejects.toMatchObject({ code: "23505", constraint: "users_email_lower_unique" });
+    ).rejects.toMatchObject({
+      code: "23505",
+      constraint: "users_email_lower_unique",
+    });
 
     await expect(
       databasePool.query(
         "INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3)",
         ["Third User", "Student@Example.com", "hash"],
       ),
-    ).rejects.toMatchObject({ code: "23514", constraint: "users_email_normalized_check" });
+    ).rejects.toMatchObject({
+      code: "23514",
+      constraint: "users_email_normalized_check",
+    });
   });
 
   it("prevents duplicate enrollment", async () => {
@@ -285,14 +322,21 @@ describe("database baseline", () => {
   it("prevents enrollment after a class has started", async () => {
     const adminId = await createUser("admin");
     const userId = await createUser();
-    const classId = await createClass(adminId, 2, new Date(Date.now() - 60_000));
+    const classId = await createClass(
+      adminId,
+      2,
+      new Date(Date.now() - 60_000),
+    );
 
     await expect(
       databasePool.query(
         "INSERT INTO enrollments (class_id, user_id) VALUES ($1, $2)",
         [classId, userId],
       ),
-    ).rejects.toMatchObject({ code: "P0001", message: "CLASS_ALREADY_STARTED" });
+    ).rejects.toMatchObject({
+      code: "P0001",
+      message: "CLASS_ALREADY_STARTED",
+    });
   });
 
   it("serializes concurrent enrollment and never exceeds capacity", async () => {
@@ -312,7 +356,9 @@ describe("database baseline", () => {
       ),
     ]);
 
-    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(
+      results.filter((result) => result.status === "fulfilled"),
+    ).toHaveLength(1);
     const rejected = results.find((result) => result.status === "rejected");
     expect(rejected).toMatchObject({
       status: "rejected",
@@ -338,7 +384,9 @@ describe("database baseline", () => {
     );
 
     await expect(
-      databasePool.query("UPDATE classes SET max_students = 1 WHERE id = $1", [classId]),
+      databasePool.query("UPDATE classes SET max_students = 1 WHERE id = $1", [
+        classId,
+      ]),
     ).rejects.toMatchObject({
       code: "23514",
       constraint: "classes_capacity_not_below_enrollments",
