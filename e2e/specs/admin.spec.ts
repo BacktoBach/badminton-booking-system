@@ -40,10 +40,13 @@ test("admin creates and cancels a recurring series", async ({ page }) => {
   await expect(page).toHaveURL(/\/admin\/classes$/);
   await page.getByPlaceholder("Tìm theo tên lớp...").fill(title);
   await expect(page.getByRole("row").filter({ hasText: title })).toHaveCount(3);
-  page.once("dialog", (dialog) => dialog.accept());
   await page
     .getByRole("button", { name: `Hủy chuỗi lớp ${title}` })
     .first()
+    .click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Xác nhận" })
     .click();
   await expect(page.getByRole("row").filter({ hasText: title })).toHaveCount(0);
 });
