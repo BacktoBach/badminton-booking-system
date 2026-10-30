@@ -74,6 +74,10 @@ const envSchema = z
     JWT_EXPIRES_IN: z.literal("1d").default("1d"),
     CLIENT_ORIGINS: clientOrigins,
     TRUST_PROXY: booleanString.default(false),
+    SENTRY_DSN: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().url().startsWith("https://").optional(),
+    ),
     SEPAY_ENABLED: booleanString.default(false),
     SEPAY_WEBHOOK_SECRET: optionalSePayValue(32),
     SEPAY_BANK_CODE: optionalSePayValue(2),

@@ -20,7 +20,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'self'; connect-src 'self'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: https://res.cloudinary.com; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'"
+          "value": "default-src 'self'; base-uri 'self'; connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: https://res.cloudinary.com; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'"
         },
         { "key": "Referrer-Policy", "value": "no-referrer" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },

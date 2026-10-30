@@ -187,6 +187,16 @@ Chạy migration `010_class_attendance_images.sql` trước khi triển khai bac
 
 ## Cài đặt local
 
+### Giám sát lỗi backend
+
+Đặt `SENTRY_DSN` trong Variables của backend trên Railway cho từng môi trường cần giám sát; dùng DSN của project backend trong Sentry. Khi biến để trống, ứng dụng vẫn chạy nhưng không gửi lỗi. Không commit giá trị thật vào `.env.example`. Backend gửi lỗi HTTP 500 ngoài dự kiến, lỗi khởi động và lỗi các tác vụ nền tới Sentry. Event không kèm request body, header, cookie, query string hoặc user; log Railway ghi JSON với `requestId`, phương thức, đường dẫn, status và thời gian xử lý. Header `X-Request-ID` giúp đối chiếu phản hồi với log và tag `request_id` trong Sentry.
+
+Frontend dùng project Sentry riêng: đặt `VITE_SENTRY_DSN` và `VITE_SENTRY_ENVIRONMENT` trong Vercel cho từng môi trường, sau đó redeploy vì Vite nhúng biến lúc build. DSN frontend là giá trị công khai trong bundle; không dùng auth token của Sentry ở đây. React render error và lỗi JavaScript chưa xử lý được ghi nhận; cấu hình bỏ request, user và breadcrumbs trước khi gửi. CSP cho phép kết nối tới Sentry ingest.
+
+Sau khi deploy, kiểm tra một lỗi ngoài dự kiến trong môi trường staging và xác nhận event xuất hiện đúng project/environment. Tạo alert cho issue mới và lỗi tăng đột biến trong Sentry; tiếp tục dùng monitor `/api/health` để báo khi API hoặc database không phản hồi. Không dùng production để chủ động gây lỗi thử.
+
+Kịch bản tải đăng ký: `npm run load:enrollment --workspace backend`. Script chỉ chấp nhận `TEST_DATABASE_URL` trỏ tới PostgreSQL local có tên kết thúc `_test`, tạo dữ liệu tạm, gửi 50 yêu cầu đồng thời vào lớp 10 chỗ và tự dọn dữ liệu. Lượt đo local ngày 2026-10-30: **103,6 RPS; p95 468 ms; 10 đăng ký thành công, 40 phản hồi lớp đầy, sĩ số cuối 10/10**. Đây là số liệu trên máy local qua loopback; cần đo lại ở staging trước go-live để biết độ trễ hạ tầng thật.
+
 ### Yêu cầu
 
 - Node.js 22.12 trở lên.

@@ -35,16 +35,29 @@ describe("environment validation", () => {
     try {
       parseEnvironment(input);
     } catch (error) {
-      expect((error as EnvironmentValidationError).details.map((detail) => detail.field))
-        .toEqual(expect.arrayContaining(["DATABASE_URL", "JWT_SECRET"]));
+      expect(
+        (error as EnvironmentValidationError).details.map(
+          (detail) => detail.field,
+        ),
+      ).toEqual(expect.arrayContaining(["DATABASE_URL", "JWT_SECRET"]));
     }
   });
 
   it("requires exact HTTPS origins in production", () => {
     const input = validEnvironment();
     input.NODE_ENV = "production";
-    input.CLIENT_ORIGINS = "http://frontend.example.com,https://api.example.com/path";
+    input.CLIENT_ORIGINS =
+      "http://frontend.example.com,https://api.example.com/path";
 
+    expect(() => parseEnvironment(input)).toThrow(EnvironmentValidationError);
+  });
+
+  it("accepts an empty Sentry DSN and rejects an insecure DSN", () => {
+    const input = validEnvironment();
+    input.SENTRY_DSN = "";
+    expect(parseEnvironment(input).SENTRY_DSN).toBeUndefined();
+
+    input.SENTRY_DSN = "http://public@o0.ingest.sentry.io/1";
     expect(() => parseEnvironment(input)).toThrow(EnvironmentValidationError);
   });
 });

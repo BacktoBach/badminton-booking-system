@@ -21,6 +21,7 @@ describe('Vercel security headers', () => {
 
     expect(policy).toContain("default-src 'self'")
     expect(policy).toContain("connect-src 'self'")
+    expect(policy).toContain('https://*.ingest.sentry.io')
     expect(policy).toContain("frame-ancestors 'none'")
     expect(policy).toContain("object-src 'none'")
     expect(policy).toContain("img-src 'self' data: https://res.cloudinary.com")
