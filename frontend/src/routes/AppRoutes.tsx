@@ -38,6 +38,12 @@ const ClassDetailPage = lazy(() =>
     default: module.ClassDetailPage,
   })),
 )
+const CheckInPage = lazy(() =>
+  import('../pages/classes/CheckInPage').then((module) => ({ default: module.CheckInPage })),
+)
+const AttendancePage = lazy(() =>
+  import('../pages/admin/AttendancePage').then((module) => ({ default: module.AttendancePage })),
+)
 const MyClassesPage = lazy(() =>
   import('../pages/enrollments/MyClassesPage').then((module) => ({
     default: module.MyClassesPage,
@@ -108,6 +114,7 @@ export const AppRoutes = () => (
         <Route element={<ProtectedRoute />}>
           <Route path="change-password" element={<ChangePasswordPage />} />
           <Route element={<UserRoute />}>
+            <Route path="check-in/:classId" element={<CheckInPage />} />
             <Route path="my-classes" element={<MyClassesPage />} />
             <Route path="payments/:classId" element={<PaymentPage />} />
           </Route>
@@ -117,6 +124,7 @@ export const AppRoutes = () => (
               <Route path="admin/classes/new" element={<ClassFormPage />} />
               <Route path="admin/classes/:classId/edit" element={<ClassFormPage />} />
               <Route path="admin/classes/:classId/students" element={<StudentsPage />} />
+              <Route path="admin/classes/:classId/attendance" element={<AttendancePage />} />
               <Route path="admin/payment-reviews" element={<PaymentReviewsPage />} />
             </Route>
           </Route>

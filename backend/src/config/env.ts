@@ -8,46 +8,64 @@ const booleanString = z
 const databaseUrl = z
   .string()
   .url()
-  .refine((value) => value.startsWith("postgresql://") || value.startsWith("postgres://"), {
-    message: "must be a PostgreSQL connection URL",
-  });
+  .refine(
+    (value) =>
+      value.startsWith("postgresql://") || value.startsWith("postgres://"),
+    {
+      message: "must be a PostgreSQL connection URL",
+    },
+  );
 
 const optionalSePayValue = (minimum: number) =>
-  z.preprocess((value) => value === "" ? undefined : value, z.string().min(minimum).optional());
+  z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().min(minimum).optional(),
+  );
 
-const clientOrigins = z.string().default("http://localhost:5173").transform((value, context) => {
-  const origins = value
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+const clientOrigins = z
+  .string()
+  .default("http://localhost:5173")
+  .transform((value, context) => {
+    const origins = value
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean);
 
-  if (origins.length === 0) {
-    context.addIssue({ code: "custom", message: "must contain at least one origin" });
-    return z.NEVER;
-  }
+    if (origins.length === 0) {
+      context.addIssue({
+        code: "custom",
+        message: "must contain at least one origin",
+      });
+      return z.NEVER;
+    }
 
-  for (const origin of origins) {
-    try {
-      const parsed = new URL(origin);
-      if (parsed.origin !== origin) {
+    for (const origin of origins) {
+      try {
+        const parsed = new URL(origin);
+        if (parsed.origin !== origin) {
+          context.addIssue({
+            code: "custom",
+            message: `must contain origins without paths or trailing slashes: ${origin}`,
+          });
+          return z.NEVER;
+        }
+      } catch {
         context.addIssue({
           code: "custom",
-          message: `must contain origins without paths or trailing slashes: ${origin}`,
+          message: `contains an invalid URL: ${origin}`,
         });
         return z.NEVER;
       }
-    } catch {
-      context.addIssue({ code: "custom", message: `contains an invalid URL: ${origin}` });
-      return z.NEVER;
     }
-  }
 
-  return origins;
-});
+    return origins;
+  });
 
 const envSchema = z
   .object({
-    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    NODE_ENV: z
+      .enum(["development", "test", "production"])
+      .default("development"),
     PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
     DATABASE_URL: databaseUrl,
     TEST_DATABASE_URL: databaseUrl.optional(),
@@ -62,31 +80,68 @@ const envSchema = z
     SEPAY_ACCOUNT_NUMBER: optionalSePayValue(4),
     SEPAY_ACCOUNT_NAME: optionalSePayValue(2),
     RESEND_API_KEY: z.preprocess(
-      (value) => value === "" ? undefined : value,
+      (value) => (value === "" ? undefined : value),
       z.string().min(1).optional(),
     ),
     MAIL_FROM: z.preprocess(
-      (value) => value === "" ? undefined : value,
+      (value) => (value === "" ? undefined : value),
       z.string().min(3).optional(),
     ),
-    PASSWORD_RESET_URL: z.string().url().refine(
-      (value) => ["http:", "https:"].includes(new URL(value).protocol),
-      "must use HTTP or HTTPS",
-    ).optional(),
+    CLOUDINARY_CLOUD_NAME: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().min(1).optional(),
+    ),
+    CLOUDINARY_API_KEY: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().min(1).optional(),
+    ),
+    CLOUDINARY_API_SECRET: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().min(1).optional(),
+    ),
+    PASSWORD_RESET_URL: z
+      .string()
+      .url()
+      .refine(
+        (value) => ["http:", "https:"].includes(new URL(value).protocol),
+        "must use HTTP or HTTPS",
+      )
+      .optional(),
   })
   .superRefine((value, context) => {
     if (value.SEPAY_ENABLED) {
-      for (const field of ["SEPAY_WEBHOOK_SECRET", "SEPAY_BANK_CODE", "SEPAY_ACCOUNT_NUMBER", "SEPAY_ACCOUNT_NAME"] as const) {
-        if (!value[field]) context.addIssue({ code: "custom", path: [field], message: "required when SEPAY_ENABLED=true" });
+      for (const field of [
+        "SEPAY_WEBHOOK_SECRET",
+        "SEPAY_BANK_CODE",
+        "SEPAY_ACCOUNT_NUMBER",
+        "SEPAY_ACCOUNT_NAME",
+      ] as const) {
+        if (!value[field])
+          context.addIssue({
+            code: "custom",
+            path: [field],
+            message: "required when SEPAY_ENABLED=true",
+          });
       }
     }
     if (value.NODE_ENV === "production") {
-      for (const field of ["RESEND_API_KEY", "MAIL_FROM", "PASSWORD_RESET_URL"] as const) {
+      for (const field of [
+        "RESEND_API_KEY",
+        "MAIL_FROM",
+        "PASSWORD_RESET_URL",
+      ] as const) {
         if (!value[field]) {
-          context.addIssue({ code: "custom", path: [field], message: "required in production" });
+          context.addIssue({
+            code: "custom",
+            path: [field],
+            message: "required in production",
+          });
         }
       }
-      if (value.PASSWORD_RESET_URL && !value.PASSWORD_RESET_URL.startsWith("https://")) {
+      if (
+        value.PASSWORD_RESET_URL &&
+        !value.PASSWORD_RESET_URL.startsWith("https://")
+      ) {
         context.addIssue({
           code: "custom",
           path: ["PASSWORD_RESET_URL"],
@@ -118,10 +173,12 @@ export const parseEnvironment = (runtimeEnv: NodeJS.ProcessEnv) => {
   const parsed = envSchema.safeParse(runtimeEnv);
   if (parsed.success) return parsed.data;
 
-  throw new EnvironmentValidationError(parsed.error.issues.map((issue) => ({
-    field: issue.path.join(".") || "environment",
-    message: issue.message,
-  })));
+  throw new EnvironmentValidationError(
+    parsed.error.issues.map((issue) => ({
+      field: issue.path.join(".") || "environment",
+      message: issue.message,
+    })),
+  );
 };
 
 export const env = Object.freeze(parseEnvironment(process.env));

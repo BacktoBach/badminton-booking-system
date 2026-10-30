@@ -12,6 +12,8 @@ export type ClassListQuery = {
 
 export type ClassWithCountRow = {
   series_id?: string | null;
+  image_url?: string | null;
+  image_public_id?: string | null;
   id: string;
   title: string;
   description: string;
@@ -34,6 +36,7 @@ export type ClassWithCountRow = {
 
 export type PublicClass = {
   seriesId?: string | null;
+  imageUrl?: string | null;
   id: string;
   title: string;
   description: string;

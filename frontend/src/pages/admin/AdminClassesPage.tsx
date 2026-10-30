@@ -186,6 +186,13 @@ export function AdminClassesPage() {
                           >
                             <Users size={18} />
                           </Link>
+                          <Link
+                            aria-label={`Điểm danh lớp ${item.title}`}
+                            className="rounded-lg border p-2 font-semibold text-emerald-700"
+                            to={`/admin/classes/${item.id}/attendance`}
+                          >
+                            Điểm danh
+                          </Link>
                           {status === 'active' && (
                             <Link
                               aria-label={`Chỉnh sửa lớp ${item.title}`}

@@ -48,4 +48,30 @@ export const classService = {
       await apiClient.get<PaginatedResponse<Student>>(`/classes/${id}/students`, { params, signal })
     ).data
   },
+  async attendance(id: string) {
+    return (
+      await apiClient.get<{
+        data: Array<{ userId: string; name: string; email: string; checkedInAt: string | null }>
+      }>(`/admin/classes/${id}/attendance`)
+    ).data.data
+  },
+  async checkInQr(id: string) {
+    return (
+      await apiClient.get<{ data: { token: string; expiresAt: string } }>(
+        `/admin/classes/${id}/check-in-qr`,
+      )
+    ).data.data
+  },
+  async checkIn(id: string, token: string) {
+    return (
+      await apiClient.post<{ data: { checkedInAt: string } }>(`/classes/${id}/check-in`, { token })
+    ).data.data
+  },
+  async uploadImage(id: string, file: File) {
+    return (
+      await apiClient.put<{ data: { imageUrl: string } }>(`/admin/classes/${id}/image`, file, {
+        headers: { 'Content-Type': file.type },
+      })
+    ).data.data
+  },
 }

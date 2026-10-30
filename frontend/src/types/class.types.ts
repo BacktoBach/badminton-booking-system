@@ -8,6 +8,7 @@ export const levelLabels: Record<ClassLevel, string> = {
 
 export type BadmintonClass = {
   seriesId?: string | null
+  imageUrl?: string | null
   id: string
   title: string
   description: string

@@ -139,17 +139,17 @@ Request/response đầy đủ nằm trong [API contract](backend/docs/API_CONTRA
 }
 ```
 
-|  HTTP | Error code chính                                                                      | Khi xảy ra                                                    |
-| ----: | ------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `400` | `VALIDATION_ERROR`, `CURRENT_PASSWORD_INCORRECT`, `MALFORMED_JSON`                    | Body/query/params sai hoặc mật khẩu hiện tại sai              |
-| `401` | `AUTH_REQUIRED`, `INVALID_TOKEN`, `TOKEN_REVOKED`, `INVALID_CREDENTIALS`              | Thiếu cookie, token sai/hết hạn/bị thu hồi hoặc đăng nhập sai |
-| `403` | `FORBIDDEN`                                                                           | Role hoặc browser Origin không được phép                      |
-| `404` | `CLASS_NOT_FOUND`, `ENROLLMENT_NOT_FOUND`, `ROUTE_NOT_FOUND`                          | Resource hoặc route không tồn tại                             |
-| `409` | `EMAIL_ALREADY_EXISTS`, `DUPLICATE_ENROLLMENT`, `CLASS_FULL`, `CLASS_ALREADY_STARTED`, `CLASS_NOT_FULL`, `DUPLICATE_WAITLIST`, `WAITLIST_OFFER_EXPIRED` | Xung đột dữ liệu hoặc business rule |
-| `409` | `CAPACITY_BELOW_CURRENT_ENROLLMENTS`                                                  | Giảm capacity thấp hơn số học viên hiện tại                   |
-| `413` | `PAYLOAD_TOO_LARGE`                                                                   | JSON vượt giới hạn 10 KB                                      |
-| `429` | `TOO_MANY_REQUESTS`                                                                   | Vượt giới hạn tần suất; xem header `Retry-After`              |
-| `503` | `DATABASE_UNAVAILABLE`                                                                | Health check không kết nối được PostgreSQL                    |
+|  HTTP | Error code chính                                                                                                                                        | Khi xảy ra                                                    |
+| ----: | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `400` | `VALIDATION_ERROR`, `CURRENT_PASSWORD_INCORRECT`, `MALFORMED_JSON`                                                                                      | Body/query/params sai hoặc mật khẩu hiện tại sai              |
+| `401` | `AUTH_REQUIRED`, `INVALID_TOKEN`, `TOKEN_REVOKED`, `INVALID_CREDENTIALS`                                                                                | Thiếu cookie, token sai/hết hạn/bị thu hồi hoặc đăng nhập sai |
+| `403` | `FORBIDDEN`                                                                                                                                             | Role hoặc browser Origin không được phép                      |
+| `404` | `CLASS_NOT_FOUND`, `ENROLLMENT_NOT_FOUND`, `ROUTE_NOT_FOUND`                                                                                            | Resource hoặc route không tồn tại                             |
+| `409` | `EMAIL_ALREADY_EXISTS`, `DUPLICATE_ENROLLMENT`, `CLASS_FULL`, `CLASS_ALREADY_STARTED`, `CLASS_NOT_FULL`, `DUPLICATE_WAITLIST`, `WAITLIST_OFFER_EXPIRED` | Xung đột dữ liệu hoặc business rule                           |
+| `409` | `CAPACITY_BELOW_CURRENT_ENROLLMENTS`                                                                                                                    | Giảm capacity thấp hơn số học viên hiện tại                   |
+| `413` | `PAYLOAD_TOO_LARGE`                                                                                                                                     | JSON vượt giới hạn 10 KB                                      |
+| `429` | `TOO_MANY_REQUESTS`                                                                                                                                     | Vượt giới hạn tần suất; xem header `Retry-After`              |
+| `503` | `DATABASE_UNAVAILABLE`                                                                                                                                  | Health check không kết nối được PostgreSQL                    |
 
 Giới hạn theo từng nhóm: đăng ký/hủy lớp dùng chung mức 20 lần/10 phút cho mỗi tài khoản và 100 lần/10 phút cho mỗi IP; danh sách/chi tiết lớp công khai dùng chung mức 600 lần/5 phút cho mỗi IP. Login/register có giới hạn riêng. Bộ đếm hiện lưu trong bộ nhớ của từng tiến trình backend; nếu chạy nhiều replica, cần chuyển sang store dùng chung để giới hạn chính xác toàn hệ thống.
 
@@ -178,6 +178,12 @@ Trước khi công bố, chủ dự án cần duyệt nội dung ba trang `/term
 ### Lịch học lặp hàng tuần
 
 Chạy migration `009_recurring_classes.sql` trước khi triển khai backend. Khi tạo lớp, quản trị viên có thể chọn tạo chuỗi, các thứ trong tuần và ngày kết thúc; giờ được lấy từ ngày khai giảng theo giờ Việt Nam. Mỗi buổi là một lớp riêng, học viên đăng ký và thanh toán riêng. Có thể sửa hoặc hủy từng buổi; thao tác với cả chuỗi áp dụng cho các buổi chưa bắt đầu và chưa bị hủy. Đổi ngày giờ được thực hiện ở từng buổi. Hủy chuỗi dùng quy trình thông báo và đối soát hoàn tiền như hủy từng lớp.
+
+### Điểm danh và ảnh lớp học
+
+Chạy migration `010_class_attendance_images.sql` trước khi triển khai backend. Trong trang quản lý lớp, admin mở mục điểm danh để hiển thị QR tại buổi học và xem danh sách học viên đã đến. QR chỉ được tạo từ 30 phút trước đến 2 giờ sau giờ bắt đầu, có hiệu lực 1 phút. Học viên quét mã, đăng nhập bằng tài khoản đã đăng ký và xác nhận có mặt; mỗi tài khoản chỉ được điểm danh một lần cho mỗi buổi. QR có thể được chuyển tiếp trong thời gian còn hiệu lực, vì vậy admin vẫn cần kiểm tra người có mặt khi cần đối chiếu danh tính.
+
+Để tải ảnh lớp, cấu hình `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` và `CLOUDINARY_API_SECRET` trên backend Railway cho từng môi trường. Chỉ backend giữ API secret. Admin chọn ảnh JPEG, PNG hoặc WebP tối đa 5 MB trên trang sửa lớp; ảnh xuất hiện ở danh sách và trang chi tiết lớp. Nếu chưa cấu hình Cloudinary, API tải ảnh trả lỗi 503 nhưng các chức năng khác vẫn hoạt động. Sau deploy, kiểm tra một lượt tải ảnh thật, xem ảnh trên mobile và thử quét QR bằng tài khoản học viên đã ghi danh.
 
 ## Cài đặt local
 

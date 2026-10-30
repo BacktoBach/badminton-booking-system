@@ -98,6 +98,13 @@ export function ClassDetailPage() {
   return (
     <section className="mx-auto grid max-w-7xl gap-8 px-4 py-12 lg:grid-cols-[1.4fr_.8fr]">
       <article className="rounded-3xl border bg-white p-7 shadow-sm">
+        {item.imageUrl && (
+          <img
+            src={item.imageUrl}
+            alt={`Ảnh lớp ${item.title}`}
+            className="mb-6 aspect-video w-full rounded-2xl object-cover"
+          />
+        )}
         <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase text-emerald-700">
           {levelLabels[item.level]}
         </span>
