@@ -1,8 +1,15 @@
 import type { ClassWithCountRow, PublicClass } from "../types/class.js";
 
-export const toPublicClass = (record: ClassWithCountRow, isEnrolled?: boolean): PublicClass => {
-  const availableSlots = Math.max(record.max_students - record.current_students, 0);
+export const toPublicClass = (
+  record: ClassWithCountRow,
+  isEnrolled?: boolean,
+): PublicClass => {
+  const availableSlots = Math.max(
+    record.max_students - record.current_students,
+    0,
+  );
   return {
+    ...(record.series_id === undefined ? {} : { seriesId: record.series_id }),
     id: record.id,
     title: record.title,
     description: record.description,
@@ -16,9 +23,15 @@ export const toPublicClass = (record: ClassWithCountRow, isEnrolled?: boolean): 
     tuitionVnd: record.tuition_vnd,
     availableSlots,
     isFull: availableSlots === 0,
-    ...(record.cancelled_at === undefined ? {} : { cancelledAt: record.cancelled_at?.toISOString() ?? null }),
+    ...(record.cancelled_at === undefined
+      ? {}
+      : { cancelledAt: record.cancelled_at?.toISOString() ?? null }),
     ...(isEnrolled === undefined ? {} : { isEnrolled }),
-    ...(record.has_pending_payment === undefined ? {} : { hasPendingPayment: record.has_pending_payment }),
-    ...(record.has_paid_tuition === undefined ? {} : { hasPaidTuition: record.has_paid_tuition }),
+    ...(record.has_pending_payment === undefined
+      ? {}
+      : { hasPendingPayment: record.has_pending_payment }),
+    ...(record.has_paid_tuition === undefined
+      ? {}
+      : { hasPaidTuition: record.has_paid_tuition }),
   };
 };

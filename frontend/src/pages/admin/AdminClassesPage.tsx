@@ -1,5 +1,7 @@
 import { Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { classService } from '../../services/class.service'
 import {
   EmptyState,
   ErrorState,
@@ -17,6 +19,11 @@ import { formatDateTime } from '../../utils/date'
 import { readClassLevel, readPositivePage, SEARCH_MAX_LENGTH } from '../../utils/search-params'
 
 export function AdminClassesPage() {
+  const queryClient = useQueryClient()
+  const cancelSeries = useMutation({
+    mutationFn: classService.cancelSeries,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['classes'] }),
+  })
   const { params, search, searchParam, setParams, setSearch } = useDebouncedSearchParam()
   const page = readPositivePage(params.get('page'))
   const level = readClassLevel(params.get('level'))
@@ -40,9 +47,27 @@ export function AdminClassesPage() {
   )
 
   const deleteClass = (id: string, title: string) => {
-    if (!window.confirm(`Hủy lớp “${title}”? Học viên sẽ được thông báo và các khoản đã thanh toán sẽ chờ đối soát hoàn tiền.`)) return
+    if (
+      !window.confirm(
+        `Hủy lớp “${title}”? Học viên sẽ được thông báo và các khoản đã thanh toán sẽ chờ đối soát hoàn tiền.`,
+      )
+    )
+      return
     remove.mutate(id, {
       onSuccess: () => showToast('Đã hủy lớp học.'),
+      onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }),
+    })
+  }
+
+  const deleteSeries = (id: string, title: string) => {
+    if (
+      !window.confirm(
+        `Hủy tất cả buổi chưa bắt đầu trong chuỗi “${title}”? Học viên sẽ được thông báo và các khoản đã thanh toán sẽ chờ đối soát hoàn tiền.`,
+      )
+    )
+      return
+    cancelSeries.mutate(id, {
+      onSuccess: () => showToast('Đã hủy các buổi chưa bắt đầu.'),
       onError: (error) => showToast({ type: 'error', message: getErrorMessage(error) }),
     })
   }
@@ -99,8 +124,18 @@ export function AdminClassesPage() {
       </div>
 
       <div className="mt-4 flex gap-4">
-        <button className={status === 'active' ? 'font-bold text-emerald-700' : ''} onClick={() => updateParams({ status: undefined })}>Lớp đang hoạt động</button>
-        <button className={status === 'cancelled' ? 'font-bold text-emerald-700' : ''} onClick={() => updateParams({ status: 'cancelled' })}>Lớp đã hủy</button>
+        <button
+          className={status === 'active' ? 'font-bold text-emerald-700' : ''}
+          onClick={() => updateParams({ status: undefined })}
+        >
+          Lớp đang hoạt động
+        </button>
+        <button
+          className={status === 'cancelled' ? 'font-bold text-emerald-700' : ''}
+          onClick={() => updateParams({ status: 'cancelled' })}
+        >
+          Lớp đã hủy
+        </button>
       </div>
 
       <div className="mt-6">
@@ -148,21 +183,35 @@ export function AdminClassesPage() {
                           >
                             <Users size={18} />
                           </Link>
-                          {status === 'active' && <Link
-                            aria-label={`Chỉnh sửa lớp ${item.title}`}
-                            className="rounded-lg border p-2"
-                            to={`/admin/classes/${item.id}/edit`}
-                          >
-                            <Pencil size={18} />
-                          </Link>}
-                          {status === 'active' && <button
-                            aria-label={`Hủy lớp ${item.title}`}
-                            className="rounded-lg border p-2 text-rose-600"
-                            disabled={remove.isPending}
-                            onClick={() => deleteClass(item.id, item.title)}
-                          >
-                            <Trash2 size={18} />
-                          </button>}
+                          {status === 'active' && (
+                            <Link
+                              aria-label={`Chỉnh sửa lớp ${item.title}`}
+                              className="rounded-lg border p-2"
+                              to={`/admin/classes/${item.id}/edit`}
+                            >
+                              <Pencil size={18} />
+                            </Link>
+                          )}
+                          {status === 'active' && (
+                            <button
+                              aria-label={`Hủy lớp ${item.title}`}
+                              className="rounded-lg border p-2 text-rose-600"
+                              disabled={remove.isPending}
+                              onClick={() => deleteClass(item.id, item.title)}
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
+                          {status === 'active' && item.seriesId && (
+                            <button
+                              aria-label={`Hủy chuỗi lớp ${item.title}`}
+                              className="rounded-lg border p-2 text-rose-600"
+                              disabled={cancelSeries.isPending}
+                              onClick={() => deleteSeries(item.id, item.title)}
+                            >
+                              Hủy chuỗi
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

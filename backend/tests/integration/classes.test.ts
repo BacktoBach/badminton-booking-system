@@ -32,7 +32,9 @@ const insertClass = async (
     maxStudents?: number;
   },
 ): Promise<string> => {
-  const startDate = new Date(Date.now() + (input.startsInHours ?? 24) * 60 * 60 * 1_000);
+  const startDate = new Date(
+    Date.now() + (input.startsInHours ?? 24) * 60 * 60 * 1_000,
+  );
   const result = await database.query<{ id: string }>(
     `INSERT INTO classes
        (title, description, coach_name, level, start_date, schedule, location,
@@ -40,13 +42,26 @@ const insertClass = async (
      VALUES ($1, 'A complete badminton class description', 'Coach An', $2, $3,
              'Monday and Wednesday', 'Court One', $4, $5)
      RETURNING id`,
-    [input.title, input.level ?? "beginner", startDate, input.maxStudents ?? 4, input.ownerId],
+    [
+      input.title,
+      input.level ?? "beginner",
+      startDate,
+      input.maxStudents ?? 4,
+      input.ownerId,
+    ],
   );
   return result.rows[0]!.id;
 };
 
-const enroll = async (database: Pool, classId: string, userId: string): Promise<void> => {
-  await database.query("INSERT INTO enrollments (class_id, user_id) VALUES ($1, $2)", [classId, userId]);
+const enroll = async (
+  database: Pool,
+  classId: string,
+  userId: string,
+): Promise<void> => {
+  await database.query(
+    "INSERT INTO enrollments (class_id, user_id) VALUES ($1, $2)",
+    [classId, userId],
+  );
 };
 
 describe("public classes API", () => {
@@ -73,6 +88,119 @@ describe("public classes API", () => {
 
   afterAll(async () => {
     await pool.end();
+  });
+
+  it("creates and manages independent sessions in a weekly series", async () => {
+    const start = new Date(Date.now() + 72 * 3600000);
+    start.setUTCHours(5, 0, 0, 0);
+    const localStart = new Date(start.getTime() + 7 * 3600000);
+    const weekday = localStart.getUTCDay();
+    const endDate = new Date(localStart.getTime() + 14 * 86400000)
+      .toISOString()
+      .slice(0, 10);
+    const cookie = createTestAuthCookie(ownerId);
+    const response = await request(app)
+      .post("/api/classes/series")
+      .set("Cookie", cookie)
+      .send({
+        class: {
+          title: "Weekly training",
+          description: "A complete badminton class description",
+          coachName: "Coach An",
+          level: "beginner",
+          startDate: start.toISOString(),
+          schedule: "Weekly training",
+          location: "Court One",
+          maxStudents: 4,
+          tuitionVnd: 0,
+        },
+        recurrence: { endDate, endTime: "23:59", weekdays: [weekday] },
+      });
+    expect(response.status).toBe(201);
+    expect(response.body.data.count).toBe(3);
+    const rows = (
+      await pool.query<{
+        id: string;
+        start_date: Date;
+        title: string;
+        cancelled_at: Date | null;
+      }>(
+        "SELECT id, start_date, title, cancelled_at FROM classes WHERE series_id = $1 ORDER BY start_date",
+        [response.body.data.seriesId],
+      )
+    ).rows;
+    expect(rows.map((row) => row.start_date.toISOString())).toEqual(
+      [0, 7, 14].map((days) =>
+        new Date(start.getTime() + days * 86400000).toISOString(),
+      ),
+    );
+    expect(
+      (
+        await request(app)
+          .patch(`/api/classes/${rows[0]!.id}`)
+          .set("Cookie", cookie)
+          .send({ title: "Only this session" })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await request(app)
+          .delete(`/api/classes/${rows[1]!.id}`)
+          .set("Cookie", cookie)
+      ).status,
+    ).toBe(204);
+    expect(
+      (
+        await request(app)
+          .patch(`/api/classes/${rows[0]!.id}/series`)
+          .set("Cookie", cookie)
+          .send({ location: "Court Two" })
+      ).status,
+    ).toBe(204);
+    const updated = (
+      await pool.query(
+        "SELECT title, location, cancelled_at FROM classes WHERE series_id = $1 ORDER BY start_date",
+        [response.body.data.seriesId],
+      )
+    ).rows;
+    expect(updated.map((row) => row.title)).toEqual([
+      "Only this session",
+      "Weekly training",
+      "Weekly training",
+    ]);
+    expect(updated.map((row) => row.location)).toEqual([
+      "Court Two",
+      "Court One",
+      "Court Two",
+    ]);
+    const paidUser = await insertUser(pool, "paid-student@example.com");
+    await pool.query(
+      "INSERT INTO enrollments (class_id, user_id, payment_status, amount_vnd) VALUES ($1, $2, 'paid', 50000)",
+      [rows[2]!.id, paidUser],
+    );
+    expect(
+      (
+        await request(app)
+          .delete(`/api/classes/${rows[0]!.id}/series`)
+          .set("Cookie", cookie)
+      ).status,
+    ).toBe(204);
+    expect(
+      (
+        await pool.query(
+          "SELECT refund_status FROM enrollments WHERE class_id = $1 AND user_id = $2",
+          [rows[2]!.id, paidUser],
+        )
+      ).rows[0].refund_status,
+    ).toBe("pending");
+    expect(
+      (
+        await pool.query(
+          "SELECT COUNT(*)::int AS count FROM classes WHERE series_id = $1 AND cancelled_at IS NULL",
+          [response.body.data.seriesId],
+        )
+      ).rows[0].count,
+    ).toBe(0);
   });
 
   it("lists only upcoming classes in stable order with live capacity", async () => {
@@ -104,10 +232,9 @@ describe("public classes API", () => {
       totalItems: 2,
       totalPages: 1,
     });
-    expect(response.body.data.map((item: { title: string }) => item.title)).toEqual([
-      "Beginner Footwork",
-      "Advanced Smash",
-    ]);
+    expect(
+      response.body.data.map((item: { title: string }) => item.title),
+    ).toEqual(["Beginner Footwork", "Advanced Smash"]);
     expect(response.body.data[0]).toMatchObject({
       currentStudents: 1,
       maxStudents: 1,
@@ -135,7 +262,9 @@ describe("public classes API", () => {
       startsInHours: 36,
     });
 
-    const response = await request(app).get("/api/classes?search=academy&level=beginner&page=2&limit=1");
+    const response = await request(app).get(
+      "/api/classes?search=academy&level=beginner&page=2&limit=1",
+    );
 
     expect(response.status).toBe(200);
     expect(response.body.meta).toEqual({
@@ -152,7 +281,9 @@ describe("public classes API", () => {
     await insertClass(pool, { ownerId, title: "100% Smash Clinic" });
     await insertClass(pool, { ownerId, title: "Ordinary Footwork" });
 
-    const response = await request(app).get("/api/classes").query({ search: "%" });
+    const response = await request(app)
+      .get("/api/classes")
+      .query({ search: "%" });
 
     expect(response.status).toBe(200);
     expect(response.body.meta.totalItems).toBe(1);
@@ -215,7 +346,9 @@ describe("public classes API", () => {
     expect(enrolledDetail.status).toBe(200);
     expect(enrolledDetail.body.data.isEnrolled).toBe(true);
 
-    const missing = await request(app).get("/api/classes/00000000-0000-4000-8000-000000000000");
+    const missing = await request(app).get(
+      "/api/classes/00000000-0000-4000-8000-000000000000",
+    );
     expect(missing.status).toBe(404);
     expect(missing.body.error.code).toBe("CLASS_NOT_FOUND");
   });

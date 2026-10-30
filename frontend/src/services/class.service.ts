@@ -25,6 +25,18 @@ export const classService = {
   async create(input: ClassWriteInput) {
     return (await apiClient.post<DataResponse<BadmintonClass>>('/classes', input)).data.data
   },
+  async createSeries(
+    input: ClassWriteInput,
+    recurrence: { endDate: string; endTime: string; weekdays: number[] },
+  ) {
+    await apiClient.post('/classes/series', { class: input, recurrence })
+  },
+  async updateSeries(id: string, input: Partial<ClassWriteInput>) {
+    await apiClient.patch(`/classes/${id}/series`, input)
+  },
+  async cancelSeries(id: string) {
+    await apiClient.delete(`/classes/${id}/series`)
+  },
   async update(id: string, input: Partial<ClassWriteInput>) {
     return (await apiClient.patch<DataResponse<BadmintonClass>>(`/classes/${id}`, input)).data.data
   },

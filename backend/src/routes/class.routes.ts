@@ -1,4 +1,10 @@
 import { Router } from "express";
+import { z } from "zod";
+import {
+  cancelClassSeries,
+  createClassSeries,
+  updateClassSeries,
+} from "../services/class.service.js";
 import {
   createClass,
   getClassDetail,
@@ -7,10 +13,19 @@ import {
   removeClass,
   updateClass,
 } from "../controllers/class.controller.js";
-import { cancelEnrollment, enroll } from "../controllers/enrollment.controller.js";
-import { authenticate, optionalAuthenticate } from "../middlewares/authenticate.js";
+import {
+  cancelEnrollment,
+  enroll,
+} from "../controllers/enrollment.controller.js";
+import {
+  authenticate,
+  optionalAuthenticate,
+} from "../middlewares/authenticate.js";
 import { authorize } from "../middlewares/authorize.js";
-import { enrollmentLimiters, publicClassReadLimiter } from "../middlewares/rate-limit.js";
+import {
+  enrollmentLimiters,
+  publicClassReadLimiter,
+} from "../middlewares/rate-limit.js";
 import { validateParams, validateQuery } from "../middlewares/validate.js";
 import { validateBody } from "../middlewares/validate.js";
 import {
@@ -23,8 +38,76 @@ import {
 
 export const classRouter = Router();
 
-classRouter.get("/", publicClassReadLimiter, validateQuery(classListQuerySchema), listClasses);
-classRouter.post("/", authenticate, authorize("admin"), validateBody(createClassSchema), createClass);
+classRouter.get(
+  "/",
+  publicClassReadLimiter,
+  validateQuery(classListQuerySchema),
+  listClasses,
+);
+classRouter.post(
+  "/",
+  authenticate,
+  authorize("admin"),
+  validateBody(createClassSchema),
+  createClass,
+);
+classRouter.post(
+  "/series",
+  authenticate,
+  authorize("admin"),
+  validateBody(
+    z
+      .object({
+        class: createClassSchema,
+        recurrence: z
+          .object({
+            endDate: z.iso.date(),
+            endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+            weekdays: z
+              .array(z.number().int().min(0).max(6))
+              .min(1)
+              .max(7)
+              .refine((days) => new Set(days).size === days.length),
+          })
+          .strict(),
+      })
+      .strict(),
+  ),
+  async (request, response) => {
+    const result = await createClassSeries(
+      request.body.class,
+      request.body.recurrence,
+      request.user!.id,
+    );
+    response.status(201).json({ data: result });
+  },
+);
+classRouter.patch(
+  "/:classId/series",
+  authenticate,
+  authorize("admin"),
+  validateParams(classParamsSchema),
+  validateBody(updateClassSchema),
+  async (request, response) => {
+    await updateClassSeries(
+      (request.validated!.params as { classId: string }).classId,
+      request.body,
+    );
+    response.status(204).end();
+  },
+);
+classRouter.delete(
+  "/:classId/series",
+  authenticate,
+  authorize("admin"),
+  validateParams(classParamsSchema),
+  async (request, response) => {
+    await cancelClassSeries(
+      (request.validated!.params as { classId: string }).classId,
+    );
+    response.status(204).end();
+  },
+);
 classRouter.post(
   "/:classId/enrollments",
   authenticate,
@@ -57,7 +140,13 @@ classRouter.patch(
   validateBody(updateClassSchema),
   updateClass,
 );
-classRouter.delete("/:classId", authenticate, authorize("admin"), validateParams(classParamsSchema), removeClass);
+classRouter.delete(
+  "/:classId",
+  authenticate,
+  authorize("admin"),
+  validateParams(classParamsSchema),
+  removeClass,
+);
 classRouter.get(
   "/:classId",
   publicClassReadLimiter,

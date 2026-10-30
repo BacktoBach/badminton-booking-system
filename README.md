@@ -175,6 +175,10 @@ Chạy migration `008_legal_consent_requests.sql` trước khi triển khai back
 
 Trước khi công bố, chủ dự án cần duyệt nội dung ba trang `/terms`, `/privacy`, `/refund-policy` và xác định đầu mối tiếp nhận, thời hạn xử lý yêu cầu dữ liệu. Sau khi triển khai, kiểm tra đăng ký mới, truy cập các trang công khai và tạo yêu cầu xóa thử bằng tài khoản học viên; kiểm tra bản ghi tương ứng trong `data_deletion_requests`.
 
+### Lịch học lặp hàng tuần
+
+Chạy migration `009_recurring_classes.sql` trước khi triển khai backend. Khi tạo lớp, quản trị viên có thể chọn tạo chuỗi, các thứ trong tuần và ngày kết thúc; giờ được lấy từ ngày khai giảng theo giờ Việt Nam. Mỗi buổi là một lớp riêng, học viên đăng ký và thanh toán riêng. Có thể sửa hoặc hủy từng buổi; thao tác với cả chuỗi áp dụng cho các buổi chưa bắt đầu và chưa bị hủy. Đổi ngày giờ được thực hiện ở từng buổi. Hủy chuỗi dùng quy trình thông báo và đối soát hoàn tiền như hủy từng lớp.
+
 ## Cài đặt local
 
 ### Yêu cầu

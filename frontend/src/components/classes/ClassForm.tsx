@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import type { ReactNode } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Button } from '../ui/Button'
 import { DateTimePicker } from '../ui/DateTimePicker'
@@ -37,6 +38,7 @@ export const buildClassUpdateInput = (
 
 type CommonProps = {
   pending: boolean
+  children?: ReactNode
 }
 
 export type ClassFormErrorHandler = (error: unknown) => AppApiError
@@ -54,7 +56,7 @@ type ClassFormProps =
       onSubmit: (input: Partial<ClassWriteInput>, context: ClassFormSubmitContext) => void
     })
 
-export function ClassForm({ mode, initial, pending, onSubmit }: ClassFormProps) {
+export function ClassForm({ mode, initial, pending, onSubmit, children }: ClassFormProps) {
   const editing = mode === 'edit'
   const classStarted = editing && hasStarted(initial.startDate)
   const initialStartDate = toBusinessDateTimeInput(initial?.startDate)
@@ -235,6 +237,7 @@ export function ClassForm({ mode, initial, pending, onSubmit }: ClassFormProps) 
           {...register('location')}
         />
       </section>
+      {children}
       <div className="flex justify-end">
         <div className="text-right">
           {errors.root?.message && (

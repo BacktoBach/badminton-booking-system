@@ -10,7 +10,8 @@ export const components = {
       type: "apiKey",
       in: "cookie",
       name: getAuthCookieName(),
-      description: "JWT session cookie set by POST /api/auth/login. The browser sends it automatically.",
+      description:
+        "JWT session cookie set by POST /api/auth/login. The browser sends it automatically.",
     },
   },
   parameters: {
@@ -103,7 +104,11 @@ export const components = {
           minLength: 8,
           example: "ExamplePass123!",
         },
-        acceptedTerms: { type: "boolean", enum: [true], description: "Agreement to the current terms and privacy policy" },
+        acceptedTerms: {
+          type: "boolean",
+          enum: [true],
+          description: "Agreement to the current terms and privacy policy",
+        },
       },
     },
     LoginRequest: {
@@ -163,10 +168,12 @@ export const components = {
       ],
       properties: {
         id: { type: "string", format: "uuid" },
+        seriesId: { type: "string", format: "uuid", nullable: true },
         title: { type: "string", example: "Badminton Foundation" },
         description: {
           type: "string",
-          description: "Plain text only. Clients must render this value as text, never as raw HTML.",
+          description:
+            "Plain text only. Clients must render this value as text, never as raw HTML.",
           example: "Lớp nền tảng dành cho học viên mới bắt đầu.",
         },
         coachName: { type: "string", example: "Coach Minh" },
@@ -176,15 +183,25 @@ export const components = {
         location: { type: "string", example: "Sân cầu lông số 1" },
         currentStudents: { type: "integer", minimum: 0, example: 3 },
         maxStudents: { type: "integer", minimum: 1, maximum: 500, example: 12 },
-        tuitionVnd: { type: "integer", minimum: 0, example: 0, description: "Class fee in VND; zero is free" },
+        tuitionVnd: {
+          type: "integer",
+          minimum: 0,
+          example: 0,
+          description: "Class fee in VND; zero is free",
+        },
         availableSlots: { type: "integer", minimum: 0, example: 9 },
         isFull: { type: "boolean", example: false },
         isEnrolled: {
           type: "boolean",
-          description: "Present on class detail responses; true when the authenticated user is enrolled.",
+          description:
+            "Present on class detail responses; true when the authenticated user is enrolled.",
           example: false,
         },
-        hasPendingPayment: { type: "boolean", description: "Present on class detail when the viewer has an active unpaid hold" },
+        hasPendingPayment: {
+          type: "boolean",
+          description:
+            "Present on class detail when the viewer has an active unpaid hold",
+        },
       },
     },
     EnrolledClass: {
@@ -210,7 +227,16 @@ export const components = {
     ClassWriteRequest: {
       type: "object",
       additionalProperties: false,
-      required: ["title", "description", "coachName", "level", "startDate", "schedule", "location", "maxStudents"],
+      required: [
+        "title",
+        "description",
+        "coachName",
+        "level",
+        "startDate",
+        "schedule",
+        "location",
+        "maxStudents",
+      ],
       properties: {
         title: { type: "string", minLength: 3, maxLength: 150 },
         description: {
@@ -229,11 +255,17 @@ export const components = {
         schedule: { type: "string", minLength: 3, maxLength: 255 },
         location: { type: "string", minLength: 3, maxLength: 255 },
         maxStudents: { type: "integer", minimum: 1, maximum: 500 },
-        tuitionVnd: { type: "integer", minimum: 0, maximum: 2000000000, default: 0 },
+        tuitionVnd: {
+          type: "integer",
+          minimum: 0,
+          maximum: 2000000000,
+          default: 0,
+        },
       },
       example: {
         title: "Badminton Foundation",
-        description: "Lớp nền tảng dành cho học viên mới bắt đầu chơi cầu lông.",
+        description:
+          "Lớp nền tảng dành cho học viên mới bắt đầu chơi cầu lông.",
         coachName: "Coach Minh",
         level: "beginner",
         startDate: "2030-10-15T12:00:00.000Z",
@@ -303,7 +335,10 @@ export const components = {
         "application/json": {
           schema: { $ref: "#/components/schemas/ApiError" },
           examples: {
-            invalidRequest: errorExample("VALIDATION_ERROR", "Request body is invalid"),
+            invalidRequest: errorExample(
+              "VALIDATION_ERROR",
+              "Request body is invalid",
+            ),
           },
         },
       },
@@ -314,9 +349,15 @@ export const components = {
         "application/json": {
           schema: { $ref: "#/components/schemas/ApiError" },
           examples: {
-            missing: errorExample("AUTH_REQUIRED", "Authentication is required"),
+            missing: errorExample(
+              "AUTH_REQUIRED",
+              "Authentication is required",
+            ),
             expired: errorExample("INVALID_TOKEN", "Session has expired"),
-            revoked: errorExample("TOKEN_REVOKED", "Session has been revoked; please sign in again"),
+            revoked: errorExample(
+              "TOKEN_REVOKED",
+              "Session has been revoked; please sign in again",
+            ),
           },
         },
       },
@@ -327,7 +368,10 @@ export const components = {
         "application/json": {
           schema: { $ref: "#/components/schemas/ApiError" },
           examples: {
-            forbidden: errorExample("FORBIDDEN", "You do not have permission for this action"),
+            forbidden: errorExample(
+              "FORBIDDEN",
+              "You do not have permission for this action",
+            ),
           },
         },
       },
@@ -344,7 +388,8 @@ export const components = {
       },
     },
     TooManyRequests: {
-      description: "Rate limit exceeded. Retry after the number of seconds in the Retry-After header.",
+      description:
+        "Rate limit exceeded. Retry after the number of seconds in the Retry-After header.",
       headers: {
         "Retry-After": {
           description: "Seconds until another request may be attempted",
