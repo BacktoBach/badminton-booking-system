@@ -6,6 +6,48 @@ import { adminAuthStatePath } from "../support/auth-state";
 
 test.use({ storageState: adminAuthStatePath });
 
+test("admin creates and cancels a recurring series", async ({ page }) => {
+  const admin = new AdminClassesPage(page);
+  const title = `E2E Series ${Date.now()}`;
+  const start = toFutureDateTimeLocal(90);
+  const end = new Date(`${start.slice(0, 10)}T00:00:00Z`);
+  end.setUTCDate(end.getUTCDate() + 2);
+  await admin.open();
+  await page.getByRole("link", { name: "Tạo lớp mới" }).click();
+  await page.getByLabel("Tên lớp").fill(title);
+  await page
+    .getByLabel("Mô tả")
+    .fill("Chuỗi buổi học để kiểm thử chức năng lặp hàng tuần.");
+  await page.getByLabel("Huấn luyện viên").fill("Coach Series");
+  await admin.setStartDate(start);
+  await page.getByRole("button", { name: "Thứ 2", exact: true }).click();
+  await page.getByLabel("Địa điểm").fill("Sân E2E");
+  await page.getByLabel("Tạo chuỗi buổi học lặp hàng tuần").check();
+  await page.getByLabel("Ngày kết thúc").fill(end.toISOString().slice(0, 10));
+  await page.getByLabel("Giờ kết thúc").fill("23:59");
+  for (const name of [
+    "CN",
+    "Thứ 2",
+    "Thứ 3",
+    "Thứ 4",
+    "Thứ 5",
+    "Thứ 6",
+    "Thứ 7",
+  ])
+    await page.getByRole("checkbox", { name, exact: true }).check();
+  await page.getByLabel("Tên lớp").fill(title);
+  await page.getByRole("button", { name: "Lưu lớp học" }).click();
+  await expect(page).toHaveURL(/\/admin\/classes$/);
+  await page.getByPlaceholder("Tìm theo tên lớp...").fill(title);
+  await expect(page.getByRole("row").filter({ hasText: title })).toHaveCount(3);
+  page.once("dialog", (dialog) => dialog.accept());
+  await page
+    .getByRole("button", { name: `Hủy chuỗi lớp ${title}` })
+    .first()
+    .click();
+  await expect(page.getByRole("row").filter({ hasText: title })).toHaveCount(0);
+});
+
 test("admin creates a class", async ({ page, request }) => {
   const admin = new AdminClassesPage(page);
   const title = `E2E Admin Created ${Date.now()}`;
@@ -66,7 +108,9 @@ test("admin searches and inspects the enrolled student list", async ({
   await expect(page.getByRole("row")).toHaveCount(2);
 });
 
-test("admin cancels a class with enrolled students and retains its history", async ({ page }) => {
+test("admin cancels a class with enrolled students and retains its history", async ({
+  page,
+}) => {
   const admin = new AdminClassesPage(page);
   const title = seededClasses.deletable.title;
   await admin.open();
