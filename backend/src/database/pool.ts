@@ -5,7 +5,7 @@ export type DatabaseClient = Pool | PoolClient;
 
 export const createDatabasePool = (connectionString: string): Pool => new Pool({
   connectionString,
-  ssl: env.DATABASE_SSL ? { rejectUnauthorized: false } : false,
+  ssl: env.DATABASE_SSL ? { rejectUnauthorized: true } : false,
   max: 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,

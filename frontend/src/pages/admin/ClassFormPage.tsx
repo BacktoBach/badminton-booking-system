@@ -134,57 +134,69 @@ export function ClassFormPage() {
       mode="create"
       pending={create.isPending || seriesCreate.isPending}
       onSubmit={submitCreate}
+      recurringDays={recurring ? days : undefined}
     >
-      <section className="rounded-xl border bg-white p-5">
-        <label>
+      <section className="rounded-2xl border bg-white p-6">
+        <label className="flex cursor-pointer items-center gap-3 font-semibold text-slate-900">
           <input
             type="checkbox"
             checked={recurring}
             onChange={(event) => setRecurring(event.target.checked)}
-          />{' '}
-          Tạo chuỗi buổi học lặp hàng tuần
+            className="h-5 w-5 accent-emerald-700"
+          />
+          Tạo chuỗi buổi học hằng tuần
         </label>
         {recurring && (
-          <div className="mt-4 space-y-3">
-            <p className="text-sm">
-              Giờ học lấy từ ngày khai giảng; mỗi buổi được đăng ký và thanh toán riêng.
+          <div className="mt-5 space-y-5 border-t border-slate-100 pt-5">
+            <p className="text-sm text-slate-600">
+              Chọn ngày kết thúc và các thứ học. Giờ bắt đầu lấy từ ngày khai giảng; mỗi buổi được
+              đăng ký và thanh toán riêng.
             </p>
-            <label>
-              Ngày kết thúc{' '}
-              <input
-                className="ml-2 rounded border p-2"
-                type="date"
-                value={endDate}
-                onChange={(event) => setEndDate(event.target.value)}
-              />
-            </label>
-            <label>
-              Giờ kết thúc{' '}
-              <input
-                className="ml-2 rounded border p-2"
-                type="time"
-                value={endTime}
-                onChange={(event) => setEndTime(event.target.value)}
-              />
-            </label>
-            <div className="flex flex-wrap gap-3">
-              {['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'].map((label, day) => (
-                <label key={day}>
-                  <input
-                    type="checkbox"
-                    checked={days.includes(day)}
-                    onChange={(event) =>
-                      setDays(
-                        event.target.checked
-                          ? [...days, day]
-                          : days.filter((value) => value !== day),
-                      )
-                    }
-                  />{' '}
-                  {label}
-                </label>
-              ))}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-semibold text-slate-800">
+                Ngày kết thúc
+                <input
+                  className="mt-2 block w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 py-2.5 font-normal"
+                  type="date"
+                  value={endDate}
+                  onChange={(event) => setEndDate(event.target.value)}
+                />
+              </label>
+              <label className="block text-sm font-semibold text-slate-800">
+                Giờ kết thúc mỗi buổi
+                <input
+                  className="mt-2 block w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 py-2.5 font-normal"
+                  type="time"
+                  value={endTime}
+                  onChange={(event) => setEndTime(event.target.value)}
+                />
+              </label>
             </div>
+            <fieldset>
+              <legend className="text-sm font-semibold text-slate-800">Thứ học trong tuần</legend>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'].map((label, day) => (
+                  <label
+                    key={day}
+                    className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${days.includes(day) ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-slate-300 bg-white text-slate-700 hover:border-emerald-500'}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={days.includes(day)}
+                      onChange={(event) =>
+                        setDays(
+                          event.target.checked
+                            ? [...days, day]
+                            : days.filter((value) => value !== day),
+                        )
+                      }
+                      className="h-4 w-4 shrink-0 accent-emerald-700"
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
           </div>
         )}
       </section>

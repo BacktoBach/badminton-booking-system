@@ -6,12 +6,12 @@
 
 | Môi trường          | URL                                                                                                                    |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Backend production  | [badminton-booking-system-0xi7.onrender.com](https://badminton-booking-system-0xi7.onrender.com)                       |
+| Backend production  | [noble-luck-production-5799.up.railway.app](https://noble-luck-production-5799.up.railway.app)                         |
 | Frontend production | [badminton-booking-system-frontend.vercel.app](https://badminton-booking-system-frontend.vercel.app)                   |
-| Health check        | [badminton-booking-system-0xi7.onrender.com/api/health](https://badminton-booking-system-0xi7.onrender.com/api/health) |
-| Swagger UI          | [badminton-booking-system-0xi7.onrender.com/api/docs/](https://badminton-booking-system-0xi7.onrender.com/api/docs/)   |
+| Health check        | [noble-luck-production-5799.up.railway.app/api/health](https://noble-luck-production-5799.up.railway.app/api/health)   |
+| Swagger UI          | [noble-luck-production-5799.up.railway.app/api/docs/](https://noble-luck-production-5799.up.railway.app/api/docs/)     |
 
-Production đã được kiểm tra với Render PostgreSQL: health check, public class list và Postman authentication đều hoạt động.
+Production sử dụng backend và PostgreSQL trên Railway, frontend trên Vercel.
 
 ## Tài khoản admin
 
