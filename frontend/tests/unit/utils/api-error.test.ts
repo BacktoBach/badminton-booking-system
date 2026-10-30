@@ -38,4 +38,10 @@ describe('toAppApiError', () => {
 
     expect(result.fieldErrors.email).toEqual(['Email không tồn tại.'])
   })
+
+  it('explains when QR check-in has not opened yet', () => {
+    expect(toAppApiError(axiosError('CHECK_IN_CLOSED', 'Check-in is closed')).message).toBe(
+      'Chưa đến giờ điểm danh hoặc buổi học đã kết thúc.',
+    )
+  })
 })

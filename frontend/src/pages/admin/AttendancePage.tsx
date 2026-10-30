@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { Link, useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/feedback/States'
 import { classService } from '../../services/class.service'
-import { getErrorMessage } from '../../utils/api-error'
+import { getErrorMessage, toAppApiError } from '../../utils/api-error'
 import { formatDateTime } from '../../utils/date'
 
 export function AttendancePage() {
@@ -46,6 +46,10 @@ export function AttendancePage() {
           </p>
           {qr.isPending ? (
             <LoadingState />
+          ) : qr.isError && toAppApiError(qr.error).code === 'CHECK_IN_CLOSED' ? (
+            <p role="status" className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
+              Mã QR sẽ xuất hiện khi buổi học mở điểm danh. Trang tự kiểm tra lại sau mỗi 30 giây.
+            </p>
           ) : qr.isError ? (
             <ErrorState message={getErrorMessage(qr.error)} onRetry={() => qr.refetch()} />
           ) : (

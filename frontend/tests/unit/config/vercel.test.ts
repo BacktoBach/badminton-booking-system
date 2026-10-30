@@ -23,6 +23,7 @@ describe('Vercel security headers', () => {
     expect(policy).toContain("connect-src 'self'")
     expect(policy).toContain("frame-ancestors 'none'")
     expect(policy).toContain("object-src 'none'")
+    expect(policy).toContain("img-src 'self' data: https://res.cloudinary.com")
   })
 
   it('proxies same-origin API requests to the Railway backend before the SPA fallback', () => {

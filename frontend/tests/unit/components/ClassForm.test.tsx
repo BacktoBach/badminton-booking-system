@@ -62,6 +62,29 @@ describe('buildClassUpdateInput', () => {
 })
 
 describe('ClassForm API errors', () => {
+  it('uses the recurring weekdays and start time without a second schedule picker', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    const { rerender } = render(
+      <ClassForm mode="create" pending={false} recurringDays={[2, 4]} onSubmit={onSubmit} />,
+    )
+
+    await user.type(screen.getByLabelText('Tên lớp'), 'Lớp cơ bản')
+    await user.type(screen.getByLabelText('Mô tả'), 'Lớp dành cho người mới bắt đầu.')
+    await user.type(screen.getByLabelText('Huấn luyện viên'), 'Coach An')
+    await pickNextMonthDate(user)
+    await user.type(screen.getByLabelText('Địa điểm'), 'Sân số 1')
+    expect(screen.queryByRole('group', { name: 'Lịch học' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Lưu lớp học' }))
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ schedule: 'Thứ 3, Thứ 5 - 19:30' }),
+      expect.any(Object),
+    )
+    rerender(<ClassForm mode="create" pending={false} onSubmit={onSubmit} />)
+    expect(screen.getByRole('group', { name: 'Lịch học' })).toBeInTheDocument()
+  })
+
   it('submits the selected Vietnam date and time as UTC', async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn()

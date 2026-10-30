@@ -20,11 +20,10 @@ test("admin creates and cancels a recurring series", async ({ page }) => {
     .fill("Chuỗi buổi học để kiểm thử chức năng lặp hàng tuần.");
   await page.getByLabel("Huấn luyện viên").fill("Coach Series");
   await admin.setStartDate(start);
-  await page.getByRole("button", { name: "Thứ 2", exact: true }).click();
   await page.getByLabel("Địa điểm").fill("Sân E2E");
-  await page.getByLabel("Tạo chuỗi buổi học lặp hàng tuần").check();
+  await page.getByLabel("Tạo chuỗi buổi học hằng tuần").check();
   await page.getByLabel("Ngày kết thúc").fill(end.toISOString().slice(0, 10));
-  await page.getByLabel("Giờ kết thúc").fill("23:59");
+  await page.getByLabel("Giờ kết thúc mỗi buổi").fill("23:59");
   for (const name of [
     "CN",
     "Thứ 2",

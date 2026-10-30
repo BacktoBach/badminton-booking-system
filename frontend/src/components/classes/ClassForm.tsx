@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Button } from '../ui/Button'
 import { DateTimePicker } from '../ui/DateTimePicker'
@@ -39,6 +39,7 @@ export const buildClassUpdateInput = (
 type CommonProps = {
   pending: boolean
   children?: ReactNode
+  recurringDays?: number[]
 }
 
 export type ClassFormErrorHandler = (error: unknown) => AppApiError
@@ -56,7 +57,14 @@ type ClassFormProps =
       onSubmit: (input: Partial<ClassWriteInput>, context: ClassFormSubmitContext) => void
     })
 
-export function ClassForm({ mode, initial, pending, onSubmit, children }: ClassFormProps) {
+export function ClassForm({
+  mode,
+  initial,
+  pending,
+  onSubmit,
+  children,
+  recurringDays,
+}: ClassFormProps) {
   const editing = mode === 'edit'
   const classStarted = editing && hasStarted(initial.startDate)
   const initialStartDate = toBusinessDateTimeInput(initial?.startDate)
@@ -84,6 +92,18 @@ export function ClassForm({ mode, initial, pending, onSubmit, children }: ClassF
   })
   const selectedStartDate = useWatch({ control, name: 'startDate' }) ?? ''
   const selectedSchedule = useWatch({ control, name: 'schedule' }) ?? ''
+  useEffect(() => {
+    if (recurringDays === undefined) return
+    const labels = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7']
+    const schedule =
+      recurringDays.length && selectedStartDate
+        ? `${[...recurringDays]
+            .sort((a, b) => a - b)
+            .map((day) => labels[day])
+            .join(', ')} - ${selectedStartDate.slice(11)}`
+        : ''
+    setValue('schedule', schedule, { shouldValidate: true })
+  }, [recurringDays, selectedStartDate, setValue])
   const updateStartDate = (value: string) => {
     setValue('startDate', value, {
       shouldDirty: true,
@@ -223,11 +243,22 @@ export function ClassForm({ mode, initial, pending, onSubmit, children }: ClassF
         />
         <div>
           <input type="hidden" {...register('schedule')} />
-          <SchedulePicker
-            value={selectedSchedule}
-            onChange={updateSchedule}
-            error={errors.schedule?.message}
-          />
+          {recurringDays === undefined ? (
+            <SchedulePicker
+              value={selectedSchedule}
+              onChange={updateSchedule}
+              error={errors.schedule?.message}
+            />
+          ) : (
+            <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+              Lịch học của chuỗi lấy từ ngày khai giảng và các thứ chọn bên dưới.
+            </p>
+          )}
+          {recurringDays !== undefined && errors.schedule?.message && (
+            <p role="alert" className="mt-1 text-xs text-rose-600">
+              Chọn ít nhất một thứ học trong tuần.
+            </p>
+          )}
         </div>
         <InputField
           label="Địa điểm"
